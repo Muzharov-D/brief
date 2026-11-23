@@ -196,7 +196,82 @@ def run_one(cap, cid, rest, p, timeout):
         code, out, err = 124, json.dumps({"error": f"{cap}: не ответил за {timeout} с"}, ensure_ascii=False), ""
     audit("run", cap=cap, connector=cid, args=[a if len(a) < 80 else a[:77] + "…" for a in rest[:6]],
           code=code, bytes=len(out), ms=int((time.time() - t0) * 1000))
+    if code == 0 and cap == "tg" and rest[:1] == ["notify"] and len(rest) > 1:
+        feed_save(rest[1])
     return code, out, err
+
+
+FEED = HOME / "state" / "лента"
+FEED_DAYS = 30
+
+
+def feed_save(path):
+    """Копия сообщения, ушедшего владельцу в Telegram, для ленты на главной Огонька.
+    Лежит только на этом компьютере, рядом с настройками, и через 30 дней удаляется."""
+    try:
+        text = Path(path).read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeDecodeError):
+        return
+    if not text:
+        return
+    FEED.mkdir(mode=0o700, parents=True, exist_ok=True)
+    now = datetime.now()
+    f = FEED / f"{now:%Y-%m-%d}.jsonl"
+    row = {"at": now.isoformat(timespec="seconds"), "agent": os.environ.get("BRIEF_AGENT") or "",
+           "kind": os.environ.get("BRIEF_FEED_KIND") or "", "text": text}
+    with open(f, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    f.chmod(0o600)
+    old = f"{now - timedelta(days=FEED_DAYS):%Y-%m-%d}"
+    for g in FEED.glob("*.jsonl"):
+        if g.stem < old:
+            g.unlink()
+
+
+def feed(days=7):
+    """Сообщения за последние дни, новые первыми."""
+    since = f"{datetime.now() - timedelta(days=days - 1):%Y-%m-%d}"
+    rows = []
+    for g in sorted(FEED.glob("*.jsonl")) if FEED.exists() else []:
+        if g.stem < since:
+            continue
+        for x in g.read_text(encoding="utf-8").splitlines():
+            try:
+                rows.append(json.loads(x))
+            except ValueError:
+                pass
+    return sorted(rows[::-1], key=lambda r: r.get("at", ""), reverse=True)  # в одну секунду: позднее в файле выше
+
+
+def agent_status(p=None):
+    """Для главной: когда каждый агент последний раз отработал и когда пойдёт следующий раз."""
+    sys.path.insert(0, str(CORE))
+    import schedule  # noqa: E402
+    p = load_profile() if p is None else p
+    last = {}
+    for g in sorted(AUDIT.glob("*.jsonl"))[-8:] if AUDIT.exists() else []:
+        for x in g.read_text(encoding="utf-8").splitlines():
+            try:
+                r = json.loads(x)
+            except ValueError:
+                continue
+            if r.get("event") == "finish" and not r.get("dry") and r.get("agent"):
+                last[r["agent"]] = {"at": r.get("at"), "ok": bool(r.get("ok"))}
+    now = datetime.now().replace(second=0, microsecond=0)
+    out = []
+    for name, md in agent_files(p).items():
+        s = agent_settings(name, md, p)
+        nxt = None
+        if s["on"] and s["schedule"]:
+            t = now
+            for _ in range(8 * 24 * 60):
+                t += timedelta(minutes=1)
+                if schedule.due(s["schedule"], t):
+                    nxt = t.isoformat(timespec="minutes")
+                    break
+        out.append({"id": name, "title": s["title"], "on": s["on"], "last": last.get(name), "next": nxt})
+    day = ["morning-briefing", "meeting-prep", "after-call", "bot-inbox", "evening-review", "weekly-review", "channels-digest"]
+    return sorted(out, key=lambda a: (day.index(a["id"]) if a["id"] in day else len(day), a["title"]))  # в порядке дня
 
 
 def writes(spec, cap, rest):
@@ -334,13 +409,16 @@ def render(md, p):
     return body
 
 
-def notify(text, p):
+def notify(text, p, kind="сбой"):
+    """Служебное сообщение владельцу от самого Огонька (не от модели): о сбое, задержке, сводка без модели."""
     f = STATE / f"notify-{os.getpid()}.txt"
     STATE.mkdir(parents=True, exist_ok=True)
     f.write_text(text, encoding="utf-8")
+    os.environ["BRIEF_FEED_KIND"] = kind  # в ленте на главной такие сообщения помечены
     try:
         cmd_run(["tg", "notify", str(f)], capture=True, timeout=120)
     finally:
+        os.environ.pop("BRIEF_FEED_KIND", None)
         f.unlink()
 
 
@@ -464,7 +542,7 @@ def cmd_agent(args):
             text = reasons(fails)
             say(f"не получилось: {text}")
             if s.get("fallback") == "digest":
-                notify(digest(p, s, text), p)
+                notify(digest(p, s, text), p, kind="сводка")
                 say("отправлена сводка без модели")
             elif failures(name, sorted({w[0] for _, w in fails})):
                 notify(f"{who}: «{s['title']}» не отработал: {text}."

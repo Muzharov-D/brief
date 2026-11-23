@@ -202,7 +202,7 @@ async def login():
     if CONFIG.exists():
         cfg = json.loads(CONFIG.read_text())
     else:
-        print("api_id и api_hash берутся на https://my.telegram.org, API development tools.")
+        print("api_id и api_hash берутся на https://my.telegram.org, API development tools. В форме: App title и Short name любые латиницей (например ogonyok), URL пустой, Platform: Desktop, Create app.")
         print("Там App api_id это число (обычно 7–9 цифр), App api_hash это строка из 32 букв и цифр.\n")
         while True:
             while True:

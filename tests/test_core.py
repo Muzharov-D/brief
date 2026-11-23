@@ -392,6 +392,24 @@ print('Готово от Claude')
         self.assertNotIn("Отменили", msg[0])
         self.assertNotIn("Потом", msg[0])
 
+    def test_feed_keeps_what_was_sent(self):
+        """Всё, что ушло владельцу в Telegram, копией ложится в ленту главной: от агента и служебное от Огонька."""
+        rec, env = self._fallback_env("partial")
+        self.brief("agent", "тест", env=env)
+        (self.ws / "Агенты/утро.md").write_text("---\ntitle: Утро\nfallback: digest\n---\nутро\n", encoding="utf-8")
+        self.brief("agent", "утро", "force", env=dict(env, FAKE_MODE="limit"))
+        sys.path.insert(0, str(self.repo / "core"))
+        os.environ["BRIEF_HOME"] = str(self.home)
+        import importlib
+        import brief
+        importlib.reload(brief)
+        items = brief.feed(1)
+        self.assertEqual([(x["agent"], x["kind"]) for x in items], [("утро", "сводка"), ("тест", "")])
+        self.assertEqual(items[1]["text"], "брифинг от Claude")
+        self.assertEqual(oct(next(brief.FEED.glob("*.jsonl")).stat().st_mode & 0o777), "0o600")
+        st = {a["id"]: a for a in brief.agent_status()}
+        self.assertTrue(st["тест"]["last"]["ok"])
+
     def test_failure_told_once(self):
         rec, env = self._fallback_env("auth")
         for _ in range(2):
