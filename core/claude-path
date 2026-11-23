@@ -1,0 +1,9 @@
+#!/bin/bash
+# Путь к Claude Code: отдельно установленный или встроенный в приложение Claude (свежий по времени).
+for c in "$CLAUDE_BIN" "$(command -v claude 2>/dev/null)" "$HOME/.local/bin/claude" "$HOME/.claude/local/claude" \
+  /opt/homebrew/bin/claude /usr/local/bin/claude; do
+  [ -n "$c" ] && [ -x "$c" ] && { echo "$c"; exit 0; }
+done
+c="$(ls -td "$HOME/Library/Application Support/Claude/claude-code/"*/*/claude.app/Contents/MacOS/claude 2>/dev/null | head -1)"
+[ -n "$c" ] && [ -x "$c" ] && { echo "$c"; exit 0; }
+exit 1

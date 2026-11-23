@@ -1,0 +1,8 @@
+#!/bin/bash
+# Путь к Codex: отдельно установленный, встроенный в ChatGPT или в приложение Codex.
+for c in "$CODEX_BIN" "$(command -v codex 2>/dev/null)" "$HOME/.local/share/briefing/bin/codex" \
+  /Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex \
+  /Applications/Codex.app/Contents/Resources/codex /opt/homebrew/bin/codex /usr/local/bin/codex; do
+  [ -n "$c" ] && [ -x "$c" ] && { echo "$c"; exit 0; }
+done
+exit 1

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleDisplayName</key><string>Brief Reminders</string><key>CFBundleName</key><string>Brief Reminders</string>
+<key>CFBundleExecutable</key><string>brief-reminders</string><key>CFBundleIdentifier</key><string>local.brief.reminders</string>
+<key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>1.0</string>
+<key>CFBundleVersion</key><string>1</string><key>LSMinimumSystemVersion</key><string>14.0</string>
+<key>LSUIElement</key><true/>
+<key>NSRemindersFullAccessUsageDescription</key><string>Огонёк ведёт задачи в своих списках Напоминаний и читает сроки. Удалять задачи не может.</string>
+<key>NSRemindersUsageDescription</key><string>Огонёк ведёт задачи в своих списках Напоминаний.</string>
+</dict></plist>

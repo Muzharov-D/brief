@@ -1,0 +1,33 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Мастер настройки</title><style>
+:root{--ink:#292C30;--ink2:#3A3E44;--paper:#F4F2EE;--card:#fff;--line:#E4E1DB;--muted:#6E7278;--fire:#F58A2B;--fire2:#FFBC46;--soft:#FFF4E6;--steel:#D5D8DA;--ok:#3F7A58}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif;background:#E9E6E0;color:var(--ink);-webkit-font-smoothing:antialiased}
+.page{width:1440px;padding:40px 80px 48px}
+.page h1{font-size:30px;font-weight:700;letter-spacing:-.3px}
+.page .lead{color:var(--muted);font-size:16px;margin:8px 0 26px;max-width:1080px;line-height:1.45}
+.win{width:1280px;height:800px;background:var(--paper);border-radius:14px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.04),0 18px 40px rgba(41,44,48,.14);display:flex;flex-direction:column;position:relative}
+.bar{height:40px;background:#E7E4DE;display:flex;align-items:center;padding:0 16px;gap:8px;flex:none;border-bottom:1px solid var(--line)}
+.dot{width:12px;height:12px;border-radius:50%;background:#CFCBC4}
+.bar .t{margin-left:14px;font-size:13px;color:var(--muted)}
+.body{flex:1;display:flex;min-height:0}
+.thumbs{display:flex;gap:48px;margin-top:34px}
+.thumb .cap{font-size:14px;color:var(--muted);margin-bottom:10px}
+.thumb .cap b{color:var(--ink);font-weight:600}
+.thumb .frame{width:576px;height:360px;overflow:hidden;border-radius:10px;box-shadow:0 10px 26px rgba(41,44,48,.12)}
+.thumb .frame .win{transform:scale(.45);transform-origin:0 0;box-shadow:none;border-radius:0}
+.av{width:40px;height:40px;border-radius:50%;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 22px;border-radius:10px;font-size:15px;font-weight:600;border:0}
+.btn.main{background:var(--ink);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid #CFCBC4}
+.chk{width:20px;height:20px;border-radius:6px;border:1.5px solid #BDB8B0;flex:none;display:inline-flex;align-items:center;justify-content:center;background:#fff}
+.chk.on{background:var(--fire);border-color:var(--fire)}
+.chk.on:after{content:"";width:9px;height:5px;border:2.4px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.sw{width:38px;height:22px;border-radius:11px;background:#CFCBC4;position:relative;flex:none}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.sw.on{background:var(--ink)}
+.sw.on:after{left:19px}
+.fold{width:18px;height:14px;flex:none}
+.muted{color:var(--muted)}
+.tag{display:inline-block;font-size:12px;padding:3px 8px;border-radius:6px;background:#ECE9E3;color:var(--muted)}
+.row{display:flex;gap:28px}.cc{flex:1;background:#fff;border-radius:14px;padding:20px}.cc .h{font-size:20px;font-weight:700;margin-bottom:14px}
+.cc img{width:100%;border-radius:8px;border:1px solid var(--line)}.cc p{font-size:14px;line-height:1.5;margin-top:10px;color:var(--ink2)}.cc b{color:var(--ink)}</style></head><body><div class="page" style="width:1800px"><h1>Мастер настройки: три подхода</h1><p class="lead">Ключевой экран у&nbsp;всех трёх: подключение Telegram с&nbsp;выбором папок. Мастер открывается двойным щелчком по&nbsp;«Установить.command», терминал и&nbsp;git не&nbsp;видны. Подробные макеты с&nbsp;соседними шагами в&nbsp;отдельных файлах.</p><div class="row"><div class="cc"><div class="h">А. Разговор с&nbsp;Огоньком</div><img src="А-разговор.png"><p>Знакомство с&nbsp;помощником в&nbsp;переписке, по&nbsp;одному вопросу.</p><p><b>Плюс:</b> Тепло, понятно новичку, сразу задаёт голос помощника.</p><p><b>Минус:</b> Дольше остальных, назад вернуться сложнее.</p></div><div class="cc"><div class="h">Б. Карточки доступа</div><img src="Б-карточки.png"><p>Все&nbsp;доступы на&nbsp;одном экране, справа итог «что&nbsp;видит и&nbsp;куда уходят данные».</p><p><b>Плюс:</b> Быстро, итог удобно показать безопаснику.</p><p><b>Минус:</b> Новичку много всего сразу.</p></div><div class="cc"><div class="h">В. Классические шаги</div><img src="В-шаги.png"><p>Привычный установщик с&nbsp;блоком «зачем этот шаг».</p><p><b>Плюс:</b> Предсказуемо, проще всего сделать и&nbsp;поддерживать.</p><p><b>Минус:</b> Меньше характера, похоже на&nbsp;обычный установщик.</p></div></div></div></body></html>

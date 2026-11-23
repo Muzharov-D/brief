@@ -1,0 +1,48 @@
+{
+  "id": "outlook-windows",
+  "title": "Outlook (Windows)",
+  "platforms": [
+    "windows"
+  ],
+  "provides": {
+    "mail": "outlook.py mail",
+    "draft": "outlook.py draft",
+    "calendar": "outlook.py calendar",
+    "tasks": "outlook.py tasks"
+  },
+  "purpose": "Почта, календарь и задачи из классического Outlook на Windows.",
+  "can": [
+    "читать письма и встречи",
+    "класть черновики",
+    "добавлять задачи в свои папки задач"
+  ],
+  "cannot": [
+    "отправлять письма",
+    "удалять письма, встречи и задачи"
+  ],
+  "data": "Всё остаётся в вашем Outlook.",
+  "setup": "Нужен классический Outlook (не новый). При первом запуске Outlook спросит доступ: «Разрешить».",
+  "requires": [
+    "python"
+  ],
+  "usage": {
+    "mail": "mail <часов_назад>",
+    "draft": "draft <файл.json>",
+    "calendar": "calendar <часов_вперёд>",
+    "tasks": "tasks list|add <файл.json>"
+  },
+  "writes": {
+    "draft": [
+      "*"
+    ],
+    "tasks": [
+      "add",
+      "complete",
+      "retime"
+    ]
+  },
+  "check": [
+    "calendar",
+    "1"
+  ]
+}

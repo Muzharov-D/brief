@@ -1,0 +1,65 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>В. Классические шаги</title><style>
+:root{--ink:#292C30;--ink2:#3A3E44;--paper:#F4F2EE;--card:#fff;--line:#E4E1DB;--muted:#6E7278;--fire:#F58A2B;--fire2:#FFBC46;--soft:#FFF4E6;--steel:#D5D8DA;--ok:#3F7A58}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif;background:#E9E6E0;color:var(--ink);-webkit-font-smoothing:antialiased}
+.page{width:1440px;padding:40px 80px 48px}
+.page h1{font-size:30px;font-weight:700;letter-spacing:-.3px}
+.page .lead{color:var(--muted);font-size:16px;margin:8px 0 26px;max-width:1080px;line-height:1.45}
+.win{width:1280px;height:800px;background:var(--paper);border-radius:14px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.04),0 18px 40px rgba(41,44,48,.14);display:flex;flex-direction:column;position:relative}
+.bar{height:40px;background:#E7E4DE;display:flex;align-items:center;padding:0 16px;gap:8px;flex:none;border-bottom:1px solid var(--line)}
+.dot{width:12px;height:12px;border-radius:50%;background:#CFCBC4}
+.bar .t{margin-left:14px;font-size:13px;color:var(--muted)}
+.body{flex:1;display:flex;min-height:0}
+.thumbs{display:flex;gap:48px;margin-top:34px}
+.thumb .cap{font-size:14px;color:var(--muted);margin-bottom:10px}
+.thumb .cap b{color:var(--ink);font-weight:600}
+.thumb .frame{width:576px;height:360px;overflow:hidden;border-radius:10px;box-shadow:0 10px 26px rgba(41,44,48,.12)}
+.thumb .frame .win{transform:scale(.45);transform-origin:0 0;box-shadow:none;border-radius:0}
+.av{width:40px;height:40px;border-radius:50%;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 22px;border-radius:10px;font-size:15px;font-weight:600;border:0}
+.btn.main{background:var(--ink);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid #CFCBC4}
+.chk{width:20px;height:20px;border-radius:6px;border:1.5px solid #BDB8B0;flex:none;display:inline-flex;align-items:center;justify-content:center;background:#fff}
+.chk.on{background:var(--fire);border-color:var(--fire)}
+.chk.on:after{content:"";width:9px;height:5px;border:2.4px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.sw{width:38px;height:22px;border-radius:11px;background:#CFCBC4;position:relative;flex:none}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.sw.on{background:var(--ink)}
+.sw.on:after{left:19px}
+.fold{width:18px;height:14px;flex:none}
+.muted{color:var(--muted)}
+.tag{display:inline-block;font-size:12px;padding:3px 8px;border-radius:6px;background:#ECE9E3;color:var(--muted)}
+
+.c-rail{width:240px;padding:28px 0 28px 26px;flex:none;border-right:1px solid var(--line);background:#F0EDE8}
+.c-s{display:flex;gap:12px;align-items:flex-start;padding:9px 0;font-size:14px;color:var(--muted)}
+.c-s .n{width:24px;height:24px;border-radius:50%;border:1.5px solid #C9C4BC;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none;background:#fff}
+.c-s.done{color:var(--ink)} .c-s.done .n{background:var(--ink);border-color:var(--ink);color:#fff}
+.c-s.cur{color:var(--ink);font-weight:600} .c-s.cur .n{border-color:var(--fire);color:var(--fire);box-shadow:0 0 0 4px rgba(245,138,43,.16)}
+.c-main{flex:1;padding:30px 40px;display:flex;flex-direction:column;min-width:0}
+.c-k{font-size:13px;color:var(--muted);font-weight:600}
+.c-main h2{font-size:26px;font-weight:700;margin:6px 0 18px}
+.c-sub{display:flex;gap:8px;margin-bottom:22px}
+.c-sub span{font-size:13px;padding:7px 12px;border-radius:8px;background:#E7E4DE;color:var(--muted)}
+.c-sub span.done{background:#E3EDE6;color:var(--ok)}
+.c-sub span.cur{background:var(--ink);color:#fff}
+.c-q{font-size:16px;font-weight:600;margin-bottom:12px}
+.c-list{background:#fff;border:1px solid var(--line);border-radius:12px}
+.c-f{display:flex;align-items:center;gap:14px;padding:15px 18px;border-top:1px solid var(--line);font-size:15px}
+.c-f:first-child{border-top:0}
+.c-f .n{margin-left:auto;font-size:13px;color:var(--muted)}
+.c-note{font-size:13px;color:var(--muted);margin-top:12px;line-height:1.5}
+.c-nav{margin-top:auto;display:flex;gap:10px}
+.c-nav .btn.main{margin-left:auto}
+.c-why{width:340px;flex:none;padding:28px 26px;background:#fff;border-left:1px solid var(--line)}
+.c-why .hd{display:flex;gap:12px;align-items:center;font-size:15px;font-weight:600}
+.c-why p{font-size:14px;line-height:1.55;margin-top:12px;color:var(--ink2)}
+.c-why .s{font-size:12px;color:var(--muted);font-weight:600;margin-top:20px}
+.c-why .li{font-size:13px;line-height:1.45;margin-top:6px;padding-left:16px;position:relative}
+.c-why .li:before{content:"";position:absolute;left:0;top:7px;width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.c-why .li.no:before{background:#B9B4AC}
+.c-opt{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:10px;display:flex;gap:14px}
+.c-opt.on{border:1.5px solid var(--fire);background:var(--soft)}
+.c-opt b{font-size:15px} .c-opt div{font-size:13px;color:var(--muted);line-height:1.45;margin-top:4px}
+.rad{width:20px;height:20px;border-radius:50%;border:1.5px solid #BDB8B0;flex:none;margin-top:1px;background:#fff}
+.rad.on{border:6px solid var(--fire)}
+</style></head><body><div class="page"><h1>В. Классические шаги</h1><p class="lead">Привычный установщик: слева все&nbsp;8&nbsp;шагов, в&nbsp;центре один вопрос, справа Огонёк объясняет, зачем шаг и&nbsp;что&nbsp;он&nbsp;сможет и&nbsp;не&nbsp;сможет. Telegram разбит на&nbsp;4&nbsp;маленьких подшага. Самый предсказуемый вариант, легко поддерживать.</p><div class="win"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="t">Огонёк&nbsp;· настройка</span></div><div class="body"><div class="c-rail"><div class="c-s done"><span class="n">1</span>Знакомство</div><div class="c-s done"><span class="n">2</span>Где&nbsp;думает помощник</div><div class="c-s done"><span class="n">3</span>Почта и&nbsp;календарь</div><div class="c-s done"><span class="n">4</span>Задачи</div><div class="c-s cur"><span class="n">5</span>Telegram</div><div class="c-s "><span class="n">6</span>Созвоны и&nbsp;голосовые</div><div class="c-s "><span class="n">7</span>Когда работать</div><div class="c-s "><span class="n">8</span>Проверка</div></div><div class="c-main"><div class="c-k">ШАГ 5&nbsp;ИЗ&nbsp;8</div><h2>Telegram</h2><div class="c-sub"><span class="done">1. Ключи</span><span class="done">2. Вход по&nbsp;QR</span><span class="cur">3. Папки</span><span>4. Свой бот</span></div><div class="c-q">Какие папки Telegram может читать помощник?</div><div class="c-list"><div class="c-f"><span class="chk on"></span><svg class="fold" viewBox="0 0 18 14"><path d="M1 2.5C1 1.7 1.7 1 2.5 1H7l1.6 2H15.5c.8 0 1.5.7 1.5 1.5v7c0 .8-.7 1.5-1.5 1.5h-13C1.7 13 1 12.3 1 11.5v-9Z" fill="none" stroke="#6E7278" stroke-width="1.4"/></svg>Sport Data<span class="n">14&nbsp;чатов</span></div><div class="c-f"><span class="chk on"></span><svg class="fold" viewBox="0 0 18 14"><path d="M1 2.5C1 1.7 1.7 1 2.5 1H7l1.6 2H15.5c.8 0 1.5.7 1.5 1.5v7c0 .8-.7 1.5-1.5 1.5h-13C1.7 13 1 12.3 1 11.5v-9Z" fill="none" stroke="#6E7278" stroke-width="1.4"/></svg>Коруc<span class="n">9&nbsp;чатов</span></div><div class="c-f"><span class="chk on"></span><svg class="fold" viewBox="0 0 18 14"><path d="M1 2.5C1 1.7 1.7 1 2.5 1H7l1.6 2H15.5c.8 0 1.5.7 1.5 1.5v7c0 .8-.7 1.5-1.5 1.5h-13C1.7 13 1 12.3 1 11.5v-9Z" fill="none" stroke="#6E7278" stroke-width="1.4"/></svg>Спорт<span class="n">22&nbsp;чата</span></div><div class="c-f"><span class="chk"></span><svg class="fold" viewBox="0 0 18 14"><path d="M1 2.5C1 1.7 1.7 1 2.5 1H7l1.6 2H15.5c.8 0 1.5.7 1.5 1.5v7c0 .8-.7 1.5-1.5 1.5h-13C1.7 13 1 12.3 1 11.5v-9Z" fill="none" stroke="#6E7278" stroke-width="1.4"/></svg>Личное<span class="n">31&nbsp;чат</span></div></div><div class="c-note">Папки берутся из&nbsp;вашего Telegram. Нужной нет? Создайте её в&nbsp;Telegram (Настройки, Папки с&nbsp;чатами) и&nbsp;нажмите «Обновить список».</div><div class="c-nav"><span class="btn ghost">Назад</span><span class="btn ghost">Обновить список</span><span class="btn main">Сохранить и&nbsp;дальше</span></div></div><div class="c-why"><div class="hd"><img class="av" src="../маскот/огонёк/огонёк-круг.svg">Зачем этот шаг</div><p>Чтобы&nbsp;я&nbsp;замечал вопросы, на&nbsp;которые вы&nbsp;не&nbsp;ответили, и&nbsp;договорённости в&nbsp;рабочих чатах. Всё&nbsp;остальное в&nbsp;вашем Telegram для&nbsp;меня закрыто.</p><div class="s">МОГУ</div><div class="li">читать только&nbsp;чаты из&nbsp;выбранных папок и&nbsp;только&nbsp;то, что&nbsp;вы&nbsp;уже&nbsp;прочитали</div><div class="li">готовить ответ ссылкой: нажимаете, отправляете сами</div><div class="s">НЕ&nbsp;МОГУ</div><div class="li no">читать чаты вне папок, даже по&nbsp;прямой просьбе</div><div class="li no">отправлять сообщения от&nbsp;вашего имени</div><div class="li no">удалять, пересылать, вступать в&nbsp;чаты</div><div class="s">ГДЕ&nbsp;ДАННЫЕ</div><p style="margin-top:6px;font-size:13px">Ключи и&nbsp;вход только&nbsp;на&nbsp;этом компьютере. Наружу уходит одно: сообщение вам в&nbsp;ваш&nbsp;бот.</p></div></div></div><div class="thumbs"><div class="thumb"><div class="cap"><b>Шаг 2.</b> Где&nbsp;думает помощник</div><div class="frame"><div class="win"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="t">Огонёк&nbsp;· настройка</span></div><div class="body"><div class="c-rail"><div class="c-s done"><span class="n">1</span>Знакомство</div><div class="c-s cur"><span class="n">2</span>Где&nbsp;думает помощник</div><div class="c-s "><span class="n">3</span>Почта и&nbsp;календарь</div><div class="c-s "><span class="n">4</span>Задачи</div><div class="c-s "><span class="n">5</span>Telegram</div><div class="c-s "><span class="n">6</span>Созвоны и&nbsp;голосовые</div><div class="c-s "><span class="n">7</span>Когда работать</div><div class="c-s "><span class="n">8</span>Проверка</div></div><div class="c-main"><div class="c-k">ШАГ 2&nbsp;ИЗ&nbsp;8</div><h2>Где&nbsp;думает помощник</h2><div class="c-opt on"><span class="rad on"></span><span><b>На&nbsp;этом компьютере</b><div>Письма и&nbsp;чаты никуда не&nbsp;уходят. Поставим программу Ollama и&nbsp;модель, около 5&nbsp;ГБ.</div></span></div><div class="c-opt"><span class="rad"></span><span><b>Подписка ChatGPT</b><div>Быстрее и&nbsp;умнее. Текст на&nbsp;время разбора уходит в&nbsp;OpenAI.</div></span></div><div class="c-opt"><span class="rad"></span><span><b>Сервер компании</b><div>Адрес модели в&nbsp;контуре компании даёт служба безопасности.</div></span></div><div class="c-nav"><span class="btn ghost">Назад</span><span class="btn main">Дальше</span></div></div><div class="c-why"><div class="hd"><img class="av" src="../маскот/огонёк/огонёк-круг.svg">Зачем этот шаг</div><p>Чтобы&nbsp;разобрать почту и&nbsp;чаты, мне нужна модель. Выбор решает, покидает ли текст ваш&nbsp;компьютер.</p></div></div></div></div></div><div class="thumb"><div class="cap"><b>Шаг 8.</b> Проверка и&nbsp;пробный брифинг</div><div class="frame"><div class="win"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="t">Огонёк&nbsp;· настройка</span></div><div class="body"><div class="c-rail"><div class="c-s done"><span class="n">1</span>Знакомство</div><div class="c-s done"><span class="n">2</span>Где&nbsp;думает помощник</div><div class="c-s done"><span class="n">3</span>Почта и&nbsp;календарь</div><div class="c-s done"><span class="n">4</span>Задачи</div><div class="c-s done"><span class="n">5</span>Telegram</div><div class="c-s done"><span class="n">6</span>Созвоны и&nbsp;голосовые</div><div class="c-s done"><span class="n">7</span>Когда работать</div><div class="c-s cur"><span class="n">8</span>Проверка</div></div><div class="c-main"><div class="c-k">ШАГ 8&nbsp;ИЗ&nbsp;8</div><h2>Проверка</h2><div class="c-list"><div class="c-f"><span class="chk on"></span>Модель на&nbsp;этом компьютере<span class="n">работает</span></div><div class="c-f"><span class="chk on"></span>Почта<span class="n">работает</span></div><div class="c-f"><span class="chk on"></span>Календарь<span class="n">работает</span></div><div class="c-f"><span class="chk on"></span>Задачи Битрикс24<span class="n">работает</span></div><div class="c-f"><span class="chk on"></span>Telegram, 3&nbsp;папки<span class="n">работает</span></div><div class="c-f"><span class="chk on"></span>Бот<span class="n">работает</span></div></div><div class="c-nav"><span class="btn ghost">Назад</span><span class="btn main">Прислать пробный брифинг</span></div></div><div class="c-why"><div class="hd"><img class="av" src="../маскот/огонёк/огонёк-круг.svg">Зачем этот шаг</div><p>Проверяю каждый доступ по-настоящему. Пробный брифинг придёт в&nbsp;ваш&nbsp;бот через 2-5&nbsp;минут.</p></div></div></div></div></div></div></div></body></html>

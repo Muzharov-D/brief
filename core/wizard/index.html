@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Огонёк · настройка</title>
+<link rel="icon" href="/ogonyok.svg">
+<style>
+:root{--ink:#292C30;--ink2:#3A3E44;--paper:#F4F2EE;--card:#fff;--line:#E4E1DB;--muted:#6E7278;--fire:#F58A2B;--fire2:#FFBC46;--soft:#FFF4E6;--steel:#D5D8DA;--ok:#3F7A58;--bad:#B4442E}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:-apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;font-size:15px}
+button,input,select{font:inherit;color:inherit}
+.app{display:flex;flex-direction:column;height:100vh}
+.top{height:52px;flex:none;display:flex;align-items:center;gap:6px;padding:0 20px;border-bottom:1px solid var(--line);background:#EDEAE4}
+.top .brand{display:flex;align-items:center;gap:10px;font-weight:600;margin-right:18px}
+.top .brand img{width:28px;height:28px}
+.tab{border:0;background:transparent;padding:7px 12px;border-radius:8px;color:var(--muted);cursor:pointer}
+.tab.cur{background:var(--ink);color:#fff}
+.tab:disabled{opacity:.4;cursor:default}
+.main{flex:1;display:flex;min-height:0}
+.av{width:40px;height:40px;border-radius:50%;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 20px;border-radius:10px;font-weight:600;border:0;cursor:pointer;background:var(--ink);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid #CFCBC4}
+.btn.fire{background:var(--fire);color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.muted{color:var(--muted)}
+.chk{width:20px;height:20px;border-radius:6px;border:1.5px solid #BDB8B0;flex:none;display:inline-flex;align-items:center;justify-content:center;background:#fff}
+.chk.on{background:var(--fire);border-color:var(--fire)}
+.chk.on:after{content:"";width:9px;height:5px;border:2.4px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.sw{width:38px;height:22px;border-radius:11px;background:#CFCBC4;position:relative;flex:none;border:0;cursor:pointer}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sw.on{background:var(--ink)}
+.sw.on:after{left:19px}
+input[type=text],input[type=password],input[type=time],input[type=url]{height:42px;border:1px solid #CFCBC4;border-radius:10px;padding:0 12px;background:#fff;min-width:0}
+input:focus,button:focus-visible{outline:2px solid var(--fire);outline-offset:1px}
+.note{font-size:13px;color:var(--muted);line-height:1.5}
+.ok{color:var(--ok)} .bad{color:var(--bad)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #CFCBC4;border-top-color:var(--fire);border-radius:50%;animation:r 1s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes r{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+/* А: разговор */
+.a-side{width:250px;background:#EDEAE4;border-right:1px solid var(--line);padding:26px 22px;flex:none;overflow:auto}
+.a-side h3{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:14px;letter-spacing:.2px}
+.a-st{display:flex;align-items:center;gap:10px;font-size:14px;padding:7px 0;color:var(--muted);cursor:default}
+.a-st i{width:8px;height:8px;border-radius:50%;background:#CFCBC4;flex:none}
+.a-st.done{color:var(--ink);cursor:pointer} .a-st.done i{background:var(--ink)}
+.a-st.cur{color:var(--ink);font-weight:600} .a-st.cur i{background:var(--fire);box-shadow:0 0 0 4px rgba(245,138,43,.18)}
+.a-side .safe{margin-top:26px;padding:14px;border-radius:10px;background:#fff;font-size:13px;line-height:1.45;color:var(--ink2)}
+.a-chat{flex:1;display:flex;flex-direction:column;min-width:0}
+.a-log{flex:1;padding:28px 48px 16px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+.a-row{display:flex;gap:12px;align-items:flex-start;max-width:780px}
+.a-b{background:#fff;border-radius:4px 14px 14px 14px;padding:14px 18px;line-height:1.5;box-shadow:0 1px 0 rgba(0,0,0,.03);min-width:0}
+.a-b b{font-weight:600}
+.a-me{align-self:flex-end;background:var(--ink);color:#fff;border-radius:14px 4px 14px 14px;padding:11px 16px;max-width:520px}
+.a-old{opacity:.55}
+.a-fl{display:flex;flex-direction:column;gap:2px;margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
+.a-f{display:flex;align-items:center;gap:12px;padding:9px 4px;cursor:pointer;border-radius:8px;border:0;background:transparent;text-align:left;width:100%}
+.a-f:hover{background:#F7F5F1}
+.a-f .n{margin-left:auto;font-size:13px;color:var(--muted)}
+.a-why{margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5}
+.a-why b{color:var(--ink);font-weight:600}
+.a-in{padding:16px 48px 22px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--line);background:#F7F5F1}
+.a-in .q{font-size:13px;color:var(--muted);margin-left:auto;max-width:360px}
+.opts{display:grid;gap:10px;margin-top:12px}
+.opt{display:flex;gap:12px;text-align:left;padding:12px 14px;border:1px solid #D9D5CE;border-radius:10px;background:#fff;cursor:pointer;align-items:flex-start}
+.opt.on{border-color:var(--fire);background:var(--soft)}
+.opt .t{font-weight:600}
+.opt .d{font-size:13px;color:var(--muted);line-height:1.45;margin-top:3px}
+.cando{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+.lbl{font-size:12px;font-weight:600;color:var(--muted);margin-top:12px}
+.li{font-size:13px;line-height:1.45;margin-top:6px;padding-left:16px;position:relative}
+.li:before{content:"";position:absolute;left:0;top:7px;width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.li.no:before{background:#B9B4AC}
+.form{display:grid;gap:10px;margin-top:12px;max-width:520px}
+.form label{font-size:13px;color:var(--muted)}
+.seg{display:inline-flex;border-radius:8px;background:#EFECE6;padding:3px}
+.seg button{border:0;background:transparent;padding:6px 14px;border-radius:6px;color:var(--muted);cursor:pointer}
+.seg button.on{background:#fff;color:var(--ink);font-weight:600}
+.sched{display:flex;flex-direction:column;gap:2px;margin-top:10px}
+.sr{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.sr .w{flex:1;min-width:0}
+.sr .w small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.doc{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.doc div{font-size:14px;line-height:1.4}
+.rep{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.rep .lbl{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.3px;margin-top:8px}
+.rep .msg{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.5;max-height:50vh;overflow:auto}
+.rep .li{font-size:14px;line-height:1.45}
+.rep details summary{cursor:pointer;font-size:14px}
+.rep details pre{margin-top:6px;max-height:40vh}
+.sr .btn.sm{min-height:32px;padding:0 12px;font-size:13px}
+pre{white-space:pre-wrap;font:12.5px/1.5 ui-monospace,Menlo,monospace;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;max-height:60vh;overflow:auto}
+
+/* Б: доступы */
+.b-main{flex:1;padding:24px 28px;display:flex;flex-direction:column;min-width:0;overflow:auto}
+.b-top{display:flex;align-items:center;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.b-top h2{font-size:22px;font-weight:700}
+.b-sub{font-size:14px;color:var(--muted);margin-bottom:18px}
+.b-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.b-c{background:#fff;border-radius:12px;padding:16px 16px 14px;border:1px solid var(--line)}
+.b-c.big{grid-column:span 2;grid-row:span 2;border:1.5px solid var(--fire)}
+.b-c.off{opacity:.7}
+.b-h{display:flex;align-items:center;gap:10px;font-weight:600}
+.b-h .sw{margin-left:auto}
+.b-p{font-size:13px;color:var(--muted);line-height:1.45;margin-top:8px}
+.b-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px}
+.b-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.b-chip{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #D9D5CE;background:#fff;cursor:pointer}
+.b-chip.on{background:var(--soft);border-color:var(--fire);font-weight:600}
+.b-side{width:330px;background:var(--ink);color:#fff;padding:26px 24px;flex:none;display:flex;flex-direction:column;overflow:auto}
+.b-side .hd{display:flex;align-items:center;gap:12px;font-size:16px;font-weight:600}
+.b-side .s{font-size:12px;color:#A9AEB4;margin-top:20px;font-weight:600;letter-spacing:.2px}
+.b-side .r{font-size:14px;line-height:1.45;margin-top:8px;color:#E8E9EA}
+.b-side .r b{color:var(--fire2);font-weight:600}
+.b-side .x{color:#A3A8AE}
+.b-side .foot{margin-top:auto;padding-top:24px;display:flex;flex-direction:column;gap:10px}
+.b-side .btn.ghost{color:#fff;border-color:#55595F}
+.panel{flex:1;padding:26px 32px;overflow:auto;max-width:980px}
+.panel h2{font-size:22px;margin-bottom:6px}
+@media (max-width:1100px){.b-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.b-side{width:280px}}
+@media (max-width:820px){.a-side{display:none}.main{flex-direction:column}.b-side{width:auto}.b-grid{grid-template-columns:1fr}.b-c.big{grid-column:auto}.a-log,.a-in{padding-left:16px;padding-right:16px}.cando,.b-cols{grid-template-columns:1fr}.top{overflow-x:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand"><img src="/ogonyok.svg" alt=""><span id="brandName">Огонёк</span></div>
+    <button class="tab" data-view="talk">Знакомство</button>
+    <button class="tab" data-view="access">Доступы</button>
+    <button class="tab" data-view="schedule">Расписание</button>
+    <button class="tab" data-view="audit">Журнал</button>
+    <button class="tab" data-view="check">Проверка</button>
+  </div>
+  <div class="main" id="main"></div>
+</div>
+<script>
+"use strict";
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+let S = null, view = null, step = 0, log = [];
+const $ = (h) => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstChild; };
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// неразрывный пробел после коротких слов, чтобы предлоги не висели в конце строки
+const nb = (s) => esc(s).replace(/(^|[\s(«])(в|во|на|с|со|к|ко|о|об|от|до|по|из|за|у|и|а|но|не|ни|для|без|при|про|что|как|это|же|или|их|вы|вам|вас|я|мне|он|она)\s/giu, "$1$2 ");
+
+async function call(name, body = {}) {
+  const r = await fetch("/api/" + name, {method: "POST", headers: {"Content-Type": "application/json", "X-Brief-Token": TOKEN}, body: JSON.stringify(body)});
+  const d = await r.json().catch(() => ({error: "сервер мастера не ответил"}));
+  if (r.status === 403) throw new Error("Страница открыта без ключа. Запустите настройку заново.");
+  return d;
+}
+async function load() { S = await call("state"); document.getElementById("brandName").textContent = name(); return S; }
+const P = () => S.profile;
+const name = () => P().assistant_name || "Огонёк";
+const conns = () => S.connectors;
+const MULTI = ["tasks"];  // эти возможности можно вести сразу в нескольких системах, первая основная
+const arr = (v) => Array.isArray(v) ? v : (v ? [v] : []);
+const mapped = (cid) => Object.entries(P().connectors || {}).filter(([, v]) => arr(v).includes(cid)).map(([k]) => k);
+const isOn = (cid) => mapped(cid).length > 0;
+async function save(patch) { const r = await call("save", patch); S.profile = r.profile; return r.profile; }
+async function setConn(cid, on) {
+  const c = conns()[cid]; if (!c) return;
+  const patch = {};
+  for (const cap of Object.keys(c.provides)) {
+    const cur = arr(P().connectors?.[cap]);
+    if (MULTI.includes(cap)) { const nx = on ? (cur.includes(cid) ? cur : [...cur, cid]) : cur.filter(x => x !== cid); patch[cap] = nx.length > 1 ? nx : (nx[0] || null); }
+    else patch[cap] = on ? cid : (cur.includes(cid) ? null : undefined);
+  }
+  Object.keys(patch).forEach(k => patch[k] === undefined && delete patch[k]);
+  await save({connectors: patch});
+  if (cid === "telegram" && on) S.telegram = await call("tg", {action: "status"});
+}
+async function waitJob(key, onTick) {
+  for (;;) { await new Promise(r => setTimeout(r, 1500)); const j = await call("job", {key}); if (onTick) onTick(j); if (!j.running) return j.result || {}; }
+}
+function cronHuman(c) {
+  if (!c) return "по запросу";
+  const m = c.trim().split(/\s+/); if (m.length !== 5) return c;
+  const [mi, h, dom, mon, dow] = m; const days = {"1-5": "будни", "*": "каждый день", "0": "воскресенье", "1": "понедельник", "2": "вторник", "3": "среда", "4": "четверг", "5": "пятница", "6": "суббота", "0,6": "выходные", "6,0": "выходные"};
+  if (/^\d+$/.test(mi) && /^\d+$/.test(h) && dom === "*" && mon === "*" && days[dow]) return `${days[dow]} ${h.padStart(2, "0")}:${mi.padStart(2, "0")}`;
+  const ev = mi.match(/^\*\/(\d+)$/); const hr = h.match(/^(\d+)-(\d+)$/);
+  if (ev && hr && dom === "*" && mon === "*") return `каждые ${ev[1]} мин с ${hr[1]} до ${hr[2]}${days[dow] && dow !== "*" ? ", " + days[dow] : ""}`;
+  if (/^\d+$/.test(mi) && hr && dom === "*" && mon === "*") return `каждый час в :${mi.padStart(2, "0")} с ${hr[1]} до ${hr[2]}${days[dow] && dow !== "*" ? ", " + days[dow] : ""}`;
+  if (ev && h === "*") return `каждые ${ev[1]} мин`;
+  return c;
+}
+const simpleCron = (c) => /^\d+ \d+ \* \* [\d,\-*]+$/.test(c || "");
+
+/* ---------- куда уходят данные (общий текст для обоих режимов) ---------- */
+function where(rt) {
+  rt = rt || P().runtime || {kind: "codex"};
+  if (rt.kind === "claude") return {short: "Claude", to: "уходит в <b>Anthropic (подписка Claude)</b>", text: "Текст писем и чатов на время разбора уходит в <b>Anthropic (подписка Claude)</b>. Хранится только у вас: ключи, журнал, брифинги."};
+  if (rt.kind === "codex") return {short: "ChatGPT", to: "уходит в <b>OpenAI (подписка ChatGPT)</b>", text: "Текст писем и чатов на время разбора уходит в <b>OpenAI (подписка ChatGPT)</b>. Хранится только у вас: ключи, журнал, брифинги."};
+  const host = (rt.base_url || "").replace(/^https?:\/\//, "").split(/[/:]/)[0];
+  if (["127.0.0.1", "localhost", "::1", ""].includes(host)) return {short: "этот компьютер", to: "никуда не уходит: модель <b>на этом компьютере</b>", text: "Никуда: думает модель <b>на этом компьютере</b>. Ключи и журнал тоже здесь."};
+  return {short: "сервер компании", to: `уходит <b>на сервер компании</b> (${esc(host)})`, text: `На <b>сервер модели вашей компании</b> (${esc(host)}). За его пределы, по словам службы безопасности, ничего не уходит.`};
+}
+
+/* ---------- А: разговор ---------- */
+const STEPS = [
+  {t: "Знакомство", f: stIntro}, {t: "Где думает помощник", f: stModel}, {t: "Почта и календарь", f: stMail},
+  {t: "Задачи", f: stTasks}, {t: "Telegram", f: stTelegram}, {t: "Созвоны и голосовые", f: stCalls},
+  {t: "Когда работать", f: stSchedule}, {t: "Проверка", f: stCheck},
+];
+function talkShell() {
+  const m = document.getElementById("main"); m.innerHTML = "";
+  const side = $(`<div class="a-side"><h3>НАСТРОЙКА, ШАГ ${step + 1} ИЗ ${STEPS.length}</h3></div>`);
+  STEPS.forEach((s, i) => {
+    const el = $(`<div class="a-st ${i < step ? "done" : i === step ? "cur" : ""}"><i></i>${nb(s.t)}</div>`);
+    if (i < step) el.onclick = () => { step = i; log = []; renderTalk(); };
+    side.appendChild(el);
+  });
+  side.appendChild($(`<div class="safe">${nb("Всё, что вы здесь выберете, хранится только на этом компьютере. Поменять можно в любой момент: вкладка «Доступы».")}</div>`));
+  const chat = $(`<div class="a-chat"><div class="a-log" id="alog"></div><div class="a-in" id="ain"></div></div>`);
+  m.append(side, chat);
+  log.forEach(h => document.getElementById("alog").appendChild($(h)));
+  return {logEl: document.getElementById("alog"), inEl: document.getElementById("ain")};
+}
+function say(html, extra) {
+  const el = $(`<div class="a-row"><img class="av" src="/ogonyok.svg" alt=""><div class="a-b">${html}</div></div>`);
+  if (extra) el.querySelector(".a-b").appendChild(extra);
+  const L = document.getElementById("alog"); L.appendChild(el); L.scrollTop = L.scrollHeight; return el;
+}
+function me(text) { log.push(`<div class="a-me a-old">${esc(text)}</div>`); }
+// в истории оставляем только реплики помощника: формы и списки отвечены ответом пользователя
+function remember() {
+  document.querySelectorAll("#alog .a-row:not(.a-old)").forEach(r => {
+    const c = r.cloneNode(true); c.classList.add("a-old");
+    c.querySelectorAll(".form, .opts, .a-fl, .sched, .doc, .cando, .a-why, select, #mdet, #td").forEach(n => n.remove());
+    const b = c.querySelector(".a-b"), t = b.textContent.trim(), only = b.querySelector(":scope > b");
+    if (t && !(only && only.textContent.trim() === t)) log.push(c.outerHTML);  // заголовки карточек «может / не может» в историю не берём
+  });
+}
+function next(answer) { if (answer) { remember(); me(answer); } step = Math.min(step + 1, STEPS.length - 1); if (!P().setup_done) save({setup_step: step}); renderTalk(); }
+function input(...nodes) { const I = document.getElementById("ain"); I.innerHTML = ""; nodes.forEach(n => I.appendChild(typeof n === "string" ? $(n) : n)); }
+function button(text, cls, fn) { const b = $(`<button class="btn ${cls || ""}">${nb(text)}</button>`); b.onclick = fn; return b; }
+function canCannot(cid) {
+  const c = conns()[cid]; if (!c) return $("<div></div>");
+  return $(`<div><div class="cando"><div><div class="lbl">МОГУ</div>${c.can.map(x => `<div class="li">${nb(x)}</div>`).join("")}</div>
+    <div><div class="lbl">НЕ МОГУ</div>${c.cannot.map(x => `<div class="li no">${nb(x)}</div>`).join("")}</div></div>
+    <div class="a-why"><b>Где данные:</b> ${nb(c.data)}</div></div>`);
+}
+function renderTalk() { view = "talk"; tabs(); talkShell(); STEPS[step].f(); }
+
+function stIntro() {
+  say(nb(`Здравствуйте! Я ${name()}, ваш помощник. Я живу на этом компьютере: утром присылаю в Telegram, что важно сегодня, готовлю черновики ответов и протоколы созвонов. Отправляю всегда вы сами.`));
+  const f = $(`<div class="form">
+    <label>Как к вам обращаться</label><input type="text" id="nm" placeholder="Имя" value="${esc(P().name || "")}">
+    <div><span class="seg" id="gd"><button data-g="m">в мужском роде</button><button data-g="f">в женском роде</button></span></div>
+    <label>Как назовёте меня</label><input type="text" id="an" value="${esc(name())}"></div>`);
+  let g = P().gender || "m";
+  const paint = () => f.querySelectorAll("#gd button").forEach(b => b.classList.toggle("on", b.dataset.g === g));
+  f.querySelectorAll("#gd button").forEach(b => b.onclick = () => { g = b.dataset.g; paint(); }); paint();
+  say(nb("Как вас зовут и как мне к вам обращаться?"), f);
+  input(button("Дальше", "", async () => {
+    const n = f.querySelector("#nm").value.trim(); if (!n) { f.querySelector("#nm").focus(); return; }
+    await save({name: n, gender: g, assistant_name: f.querySelector("#an").value.trim() || "Огонёк"});
+    document.getElementById("brandName").textContent = name();
+    next(`${n}, ${g === "f" ? "в женском роде" : "в мужском роде"}`);
+  }));
+}
+
+async function stModel() {
+  say(nb("Где мне думать над вашими письмами и чатами? От этого зависит, уходит ли текст за пределы компьютера."));
+  const box = $(`<div><div class="opts" id="mo"></div><div id="mdet" style="margin-top:12px"></div></div>`);
+  const holder = say(nb("Проверяю, что уже есть на компьютере…"), box);
+  const m = await call("models");
+  holder.querySelector(".a-b").firstChild.textContent = "";
+  const rt = P().runtime || {};
+  let pick = rt.kind === "codex" || rt.kind === "claude" ? rt.kind : rt.kind ? ((rt.base_url || "").match(/127\.0\.0\.1|localhost/) ? "local" : "server") : (m.local.length ? "local" : (m.claude?.logged_in ? "claude" : (m.codex.found ? "codex" : "local")));
+  const o = [
+    ["local", "На этом компьютере", "Ничего никуда не уходит. Нужна бесплатная программа с моделью: Ollama или LM Studio. Чуть медленнее, на слабых компьютерах хуже понимает."],
+    ["claude", "Подписка Claude", "Если пользуетесь Claude (Pro или Max), подойдёт тот же аккаунт, что и в чате. Быстро и умно, но текст писем и чатов на время разбора уходит в Anthropic."],
+    ["codex", "Подписка ChatGPT", "Быстро и умно, но текст писем и чатов на время разбора уходит в OpenAI. Нужна ваша подписка ChatGPT."],
+    ["server", "Сервер компании", "Если служба безопасности дала адрес модели внутри компании. Данные не выходят за контур компании."],
+  ];
+  const mo = box.querySelector("#mo"), det = box.querySelector("#mdet");
+  let chosen = null;
+  function paint() {
+    mo.innerHTML = "";
+    o.forEach(([k, t, d]) => { const b = $(`<button class="opt ${pick === k ? "on" : ""}"><span class="chk ${pick === k ? "on" : ""}"></span><span><div class="t">${nb(t)}</div><div class="d">${nb(d)}</div></span></button>`); b.onclick = () => { pick = k; paint(); }; mo.appendChild(b); });
+    det.innerHTML = ""; chosen = null;
+    if (pick === "local") {
+      if (!m.local.length) { det.appendChild($(`<div class="note">${nb("Программа с моделью не найдена. Поставьте Ollama с сайта ollama.com, откройте её и скачайте модель qwen3:8b (около 5 ГБ, на компьютере с памятью 16 ГБ и больше). Потом нажмите «Проверить снова».")}</div>`)); return; }
+      const sel = $(`<select style="height:42px;border:1px solid #CFCBC4;border-radius:10px;padding:0 10px;background:#fff;max-width:100%"></select>`);
+      m.local.forEach((x, i) => sel.appendChild($(`<option value="${i}">${esc(x.app)}: ${esc(x.model)}</option>`)));
+      const cur = m.local.findIndex(x => x.model === rt.model); if (cur >= 0) sel.value = cur;
+      const upd = () => { const x = m.local[+sel.value]; chosen = {kind: x.kind, model: x.model, base_url: x.base_url, num_ctx: 32768}; };
+      sel.onchange = upd; upd(); det.append($(`<div class="note" style="margin-bottom:6px">Модель</div>`), sel);
+    } else if (pick === "claude") {
+      chosen = {kind: "claude"};
+      const st = m.claude || {};
+      det.appendChild($(`<div class="note">${st.logged_in ? '<span class="ok">Вход в Claude выполнен.</span>' : nb(st.found ? "Нужно один раз войти в Claude: нажмите «Войти в Claude», откроется окно и браузер. Войдите тем же аккаунтом, что и в чате." : "Поставлю Claude Code (официальная программа Anthropic, входит в подписку) и попрошу войти: нажмите «Войти в Claude», откроется окно и браузер.")}</div>`));
+      det.appendChild($(`<div class="note" style="margin-top:6px">${nb("Нужна подписка Pro или Max: бесплатный тариф не подходит. Обучение моделей на ваших данных можно выключить в настройках Claude: Конфиденциальность.")}</div>`));
+      if (!st.logged_in) det.appendChild(button("Войти в Claude", "ghost", async () => { await call("claude_login"); det.appendChild($(`<div class="note">${nb("Войдите в браузере, затем нажмите «Проверить и дальше».")}</div>`)); }));
+    } else if (pick === "codex") {
+      chosen = {kind: "codex"};
+      det.appendChild($(`<div class="note">${!m.codex.found ? nb("Codex не найден: обновите приложение ChatGPT до свежей версии и нажмите «Проверить снова».") : m.codex.logged_in ? '<span class="ok">Вход в ChatGPT выполнен.</span>' : nb("Нужно войти в ChatGPT: нажмите «Войти», откроется браузер.")}</div>`));
+      if (m.codex.found && !m.codex.logged_in) det.appendChild(button("Войти в ChatGPT", "ghost", async () => { await call("codex_login"); det.appendChild($(`<div class="note">${nb("Войдите в браузере, затем нажмите «Проверить снова».")}</div>`)); }));
+    } else {
+      const f = $(`<div class="form"><label>Адрес сервера модели (OpenAI-совместимый)</label><input type="url" id="su" placeholder="https://llm.company.ru/v1" value="${esc(rt.kind === "openai" && pick === "server" ? rt.base_url || "" : "")}">
+        <label>Название модели</label><input type="text" id="sm" value="${esc(pick === "server" ? rt.model || "" : "")}">
+        <label>Ключ доступа, если дали (хранится только на этом компьютере)</label><input type="password" id="sk" autocomplete="off"></div>`);
+      det.appendChild(f); chosen = "server";
+    }
+  }
+  paint();
+  input(button("Проверить и дальше", "", async (e) => {
+    let r = chosen;
+    if (r === "server") {
+      const u = document.querySelector("#su").value.trim(), md = document.querySelector("#sm").value.trim(), k = document.querySelector("#sk").value;
+      if (!u || !md) return;
+      r = {kind: "openai", base_url: u, model: md, num_ctx: 32768};
+      if (k) r.key_file = (await call("model_key", {key: k})).key_file;
+    }
+    if (!r) return;
+    e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span>Проверяю';
+    const c = await call("model_check", {runtime: r});
+    e.target.disabled = false; e.target.textContent = "Проверить и дальше";
+    if (!c.ok) { det.appendChild($(`<div class="note bad" style="margin-top:8px">${nb(c.detail || "модель не отвечает")}</div>`)); return; }
+    await save({runtime: r});
+    askFallback(r, m, o.find(x => x[0] === pick)[1] + (r.model && !["codex", "claude"].includes(r.kind) ? `: ${r.model}` : ""));
+  }), button("Проверить снова", "ghost", () => renderTalk()));
+}
+// Запасная модель: если основная не ответит (кончился лимит, сбой), тот же агент идёт через неё.
+// Только то, что уже работает на компьютере, и только по выбору владельца: данные в этот раз уйдут туда.
+function askFallback(main, m, label) {
+  const isLocal = !["claude", "codex"].includes(main.kind) && /127\.0\.0\.1|localhost/.test(main.base_url || "");
+  const c = [];
+  if (main.kind !== "claude" && m.claude?.logged_in) c.push({rt: {kind: "claude"}, t: "Подписка Claude", d: "Только если основная не ответит. В этот раз текст писем и чатов уйдёт в Anthropic."});
+  if (main.kind !== "codex" && m.codex?.logged_in) c.push({rt: {kind: "codex"}, t: "Подписка ChatGPT", d: "Только если основная не ответит. В этот раз текст писем и чатов уйдёт в OpenAI."});
+  if (!isLocal && m.local?.length) { const x = m.local[0]; c.push({rt: {kind: x.kind, model: x.model, base_url: x.base_url, num_ctx: 32768}, t: `На этом компьютере: ${x.model}`, d: "Ничего никуда не уходит, но разбор будет проще."}); }
+  if (!c.length) { save({fallback_runtime: null}).then(() => next(label)); return; }
+  remember(); me(label);
+  const cur = P().fallback_runtime; let pick = c.findIndex(x => cur && x.rt.kind === cur.kind && (x.rt.model || "") === (cur.model || ""));
+  const list = $(`<div class="opts"></div>`);
+  const paint = () => { list.innerHTML = ""; [{t: "Без запасной", d: "Если основная не ответит, повторю через 20 и 40 минут, а утром пришлю сводку без разбора: встречи, задачи, сколько писем и чатов ждёт."}, ...c].forEach((x, i) => { const on = pick === i - 1; const b = $(`<button class="opt ${on ? "on" : ""}"><span class="chk ${on ? "on" : ""}"></span><span><div class="t">${nb(x.t)}</div><div class="d">${nb(x.d)}</div></span></button>`); b.onclick = () => { pick = i - 1; paint(); }; list.appendChild(b); }); };
+  paint();
+  say(nb("Если основная модель не ответит (кончился лимит подписки, сбой у сервиса), можно сразу взять запасную. Иначе я повторю попытку позже."), list);
+  input(button("Дальше", "", async () => {
+    const fb = pick >= 0 ? c[pick] : null;
+    await save({fallback_runtime: fb ? fb.rt : null});
+    next(fb ? `Запасная: ${fb.t}` : "Без запасной");
+  }));
+}
+
+function stMail() {
+  const mac = S.platform === "mac";
+  const ids = mac ? ["apple-mail", "apple-calendar"] : ["outlook-windows"];
+  say(nb(mac ? "Почта и календарь: беру их из приложений Почта и Календарь на этом Mac. Рабочие ящики и календари должны быть уже подключены там." : "Почта, календарь и задачи: беру их из классического Outlook."));
+  ids.forEach(id => conns()[id] && say(`<b>${nb(conns()[id].title)}</b>`, canCannot(id)));
+  const on = {}; ids.forEach(id => on[id] = isOn(id) || !P().connectors);
+  const list = $(`<div class="a-fl"></div>`);
+  const paint = () => { list.innerHTML = ""; ids.forEach(id => { const b = $(`<button class="a-f"><span class="chk ${on[id] ? "on" : ""}"></span>${nb(conns()[id].title)}</button>`); b.onclick = () => { on[id] = !on[id]; paint(); }; list.appendChild(b); }); };
+  paint(); say(nb("Что подключаем?"), list);
+  input(button("Дальше", "", async () => {
+    for (const id of ids) await setConn(id, on[id]);
+    next(ids.filter(i => on[i]).map(i => conns()[i].title).join(", ") || "Не подключать");
+  }), $(`<span class="q">${nb("macOS спросит разрешение при первом обращении: нажмите «Разрешить».")}</span>`));
+}
+
+function stTasks() {
+  const opts = [["apple-reminders", "Напоминания", "Задачи видны на iPhone, всё в iCloud или на компьютере."], ["outlook-windows", "Outlook", "Задачи в Outlook."], ["bitrix24", "Битрикс24", "Задачи себе ставлю сразу, коллегам только после вашего «ставь N» в боте."]].filter(x => conns()[x[0]] && conns()[x[0]].provides.tasks);
+  say(nb("Куда записывать задачи и обещания из писем, чатов и созвонов? Можно выбрать несколько."));
+  const had = arr(P().connectors?.tasks);
+  let picks = had.length ? had.slice() : [opts[0]?.[0]].filter(Boolean);
+  const box = $(`<div><div class="opts"></div><div id="tm"></div><div id="td"></div></div>`);
+  const paint = () => {
+    const O = box.querySelector(".opts"); O.innerHTML = "";
+    const row = (k, t, d, on, click) => { const b = $(`<button class="opt ${on ? "on" : ""}"><span class="chk ${on ? "on" : ""}"></span><span><div class="t">${nb(t)}</div><div class="d">${nb(d)}</div></span></button>`); b.onclick = click; O.appendChild(b); };
+    opts.forEach(([k, t, d]) => row(k, t, d, picks.includes(k), () => { picks = picks.includes(k) ? picks.filter(x => x !== k) : [...picks, k]; paint(); }));
+    row("", "Не нужно", "Задачи вести не буду, только напоминать в брифинге.", !picks.length, () => { picks = []; paint(); });
+    const M = box.querySelector("#tm"); M.innerHTML = "";
+    if (picks.length > 1) {
+      const fl = $(`<div class="a-fl" style="margin-top:12px"></div>`);
+      picks.forEach(k => { const b = $(`<button class="a-f"><span class="chk ${picks[0] === k ? "on" : ""}"></span>${nb(opts.find(x => x[0] === k)[1])}</button>`); b.onclick = () => { picks = [k, ...picks.filter(x => x !== k)]; paint(); }; fl.appendChild(b); });
+      M.append($(`<div class="note" style="margin-top:12px">${nb("Новые задачи по умолчанию записываю в отмеченную систему. Если в боте скажете «в Битрикс» или «в Напоминания», запишу туда.")}</div>`), fl);
+    }
+    const D = box.querySelector("#td"); D.innerHTML = ""; picks.forEach(k => D.appendChild(canCannot(k)));
+  };
+  paint(); say("", box);
+  input(button("Дальше", "", async (e) => {
+    await save({connectors: {tasks: picks.length > 1 ? picks : (picks[0] || null)}});
+    if (picks.includes("bitrix24") && !had.includes("bitrix24")) {
+      say(nb("Откроется окно: вставьте ссылку входящего вебхука из Битрикс24 (Разработчикам, Другое, Входящий вебхук, права «Задачи» и «Пользователи»). Ссылка хранится только на этом компьютере."));
+      e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span>Жду окно Битрикс24';
+      const r = await waitJob((await call("bitrix_setup")).started);
+      e.target.disabled = false; e.target.textContent = "Дальше";
+      if (r.error) { say(`<span class="bad">${nb(r.error)}</span>`); return; }
+      say(`<span class="ok">${nb("Битрикс24 подключён: " + (r.user || "") + ", " + (r.portal || ""))}</span>`);
+    }
+    next(picks.map(k => opts.find(x => x[0] === k)[1]).join(", ") || "Не нужно");
+  }));
+}
+
+async function stTelegram() {
+  if (!conns().telegram) return next("Telegram недоступен");
+  say(nb("Telegram: замечаю вопросы и договорённости в рабочих чатах и присылаю вам брифинги через вашего личного бота."), canCannot("telegram"));
+  if (!isOn("telegram")) {
+    input(button("Подключить Telegram", "", async () => { await setConn("telegram", true); renderTalk(); }), button("Без Telegram", "ghost", () => next("Без Telegram")));
+    return;
+  }
+  const st = S.telegram = await call("tg", {action: "status"});
+  if (!st.session) {
+    say(nb("Сначала вход. Понадобятся ключи: откройте my.telegram.org, войдите по номеру, раздел API development tools, создайте приложение с любым названием. Затем нажмите «Войти»: появятся окна для двух ключей и QR-код, отсканируйте его телефоном (Telegram, Настройки, Устройства)."));
+    input(button("Войти", "", async (e) => {
+      e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span>Жду вход';
+      const r = await waitJob((await call("tg", {action: "gui-login"})).started);
+      if (r.error) say(`<span class="bad">${nb(r.error)}</span>`);
+      renderTalk();
+    }), button("Без Telegram", "ghost", async () => { await setConn("telegram", false); next("Без Telegram"); }));
+    return;
+  }
+  const holder = say(nb("Вход выполнен. Загружаю ваши папки…"));
+  const f = await call("tg", {action: "folders"});
+  if (f.error || !(f.folders || []).length) {
+    holder.querySelector(".a-b").innerHTML = nb(f.error || "В Telegram пока нет папок. Создайте папку с рабочими чатами (Настройки, Папки с чатами) и нажмите «Обновить».");
+    input(button("Обновить", "", () => renderTalk())); return;
+  }
+  holder.remove();
+  const sel = new Set(f.selected.length ? f.selected : []);
+  const list = $(`<div class="a-fl"></div>`);
+  const plural = (n) => n % 10 === 1 && n % 100 !== 11 ? "чат" : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "чата" : "чатов";
+  const paint = () => {
+    list.innerHTML = "";
+    f.folders.forEach(x => { const b = $(`<button class="a-f"><span class="chk ${sel.has(x.title) ? "on" : ""}"></span>${esc(x.title)}<span class="n">${x.chats} ${plural(x.chats)}${x.categories.length ? " + " + esc(x.categories.join(", ")) : ""}</span></button>`); b.onclick = () => { sel.has(x.title) ? sel.delete(x.title) : sel.add(x.title); paint(); saveBtn.innerHTML = `Сохранить ${sel.size} ${sel.size === 1 ? "папку" : sel.size < 5 ? "папки" : "папок"}`; saveBtn.disabled = !sel.size; }; list.appendChild(b); });
+  };
+  const why = $(`<div class="a-why"><b>${nb("Что я буду делать с этими чатами:")}</b> ${nb("замечать вопросы, на которые вы не ответили, и договорённости. Читаю только то, что вы уже прочитали сами. Писать от вашего имени не могу: ответ приходит вам ссылкой, отправляете вы.")}</div>`);
+  const wrap = $(`<div></div>`); wrap.append(list, why);
+  say(nb("Теперь главное: какие чаты мне можно видеть. Отметьте папки из вашего Telegram. Чаты вне отмеченных папок для меня закрыты совсем, даже если вы сами попросите их прочитать."), wrap);
+  const saveBtn = button("Сохранить", "", async () => {
+    const r = await call("tg", {action: "save_folders", folders: [...sel]});
+    if (r.error) { say(`<span class="bad">${nb(r.error)}</span>`); return; }
+    if (!st.bot) return botStep([...sel]);
+    next(`Папки: ${[...sel].join(", ")}`);
+  });
+  paint(); saveBtn.textContent = sel.size ? `Сохранить ${sel.size} ${sel.size === 1 ? "папку" : sel.size < 5 ? "папки" : "папок"}` : "Отметьте папки"; saveBtn.disabled = !sel.size;
+  input(saveBtn, button("Обновить список", "ghost", () => renderTalk()), $(`<span class="q">${nb("Нужной папки нет? Создайте её в Telegram и нажмите «Обновить список».")}</span>`));
+}
+function botStep(folders) {
+  remember(); me(`Папки: ${folders.join(", ")}`);
+  say(nb("Последнее для Telegram: ваш личный бот, через него я пишу вам и принимаю голосовые. В Telegram откройте @BotFather, отправьте /newbot, задайте название и адрес на …bot и скопируйте токен из ответа. Потом нажмите «Подключить бота» и вставьте токен в окно."));
+  input(button("Подключить бота", "", async (e) => {
+    e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span>Жду токен';
+    const r = await waitJob((await call("tg", {action: "bot-setup"})).started);
+    e.target.disabled = false; e.target.textContent = "Подключить бота";
+    if (r.error) { say(`<span class="bad">${nb(r.error)}</span>`); return; }
+    next("Бот подключён");
+  }), button("Позже", "ghost", () => next("Бот позже")));
+}
+
+function stCalls() {
+  const ids = ["calls-anarlog", "voice-whisper"].filter(i => conns()[i]);
+  if (!ids.length) return next("Пропущено");
+  say(nb("Ещё две вещи, по желанию. Протоколы созвонов: записывает бесплатная программа Anarlog прямо на компьютере, я делаю из записи протокол, задачи и черновик письма. Голосовые: наговорите задачу моему боту, через 15 минут она станет задачей."));
+  ids.forEach(id => say(`<b>${nb(conns()[id].title)}</b>`, canCannot(id)));
+  const on = {}; ids.forEach(id => on[id] = isOn(id) || (!P().calls_asked && id === "voice-whisper" && isOn("telegram")));
+  const list = $(`<div class="a-fl"></div>`);
+  const paint = () => { list.innerHTML = ""; ids.forEach(id => { const need = id === "voice-whisper" && !isOn("telegram"); const b = $(`<button class="a-f" ${need ? "disabled" : ""}><span class="chk ${on[id] && !need ? "on" : ""}"></span>${nb(conns()[id].title)}${need ? `<span class="n">${nb("нужен Telegram")}</span>` : ""}</button>`); b.onclick = () => { on[id] = !on[id]; paint(); }; list.appendChild(b); }); };
+  paint(); say(nb("Что включаем?"), list);
+  input(button("Дальше", "", async () => {
+    for (const id of ids) await setConn(id, on[id] && !(id === "voice-whisper" && !isOn("telegram")));
+    await save({calls_asked: true});
+    next(ids.filter(i => on[i]).map(i => conns()[i].title).join(", ") || "Не нужно");
+  }));
+}
+
+// opts.switches: показывать переключатели; opts.trial(a, btn): кнопка пробного прогона в строке
+function scheduleList(onChange, opts = {}) {
+  const box = $(`<div class="sched"></div>`);
+  const agents = S.agents;
+  const conf = Object.assign({}, P().agents || {});
+  agents.forEach(a => {
+    const c = conf[a.id] || {}; const on = c.on ?? a.on; let cron = c.schedule ?? a.schedule;
+    const tried = a.tried ? ` · проба ${fmtAt(a.tried.at)}${a.tried.ok ? "" : ", с ошибкой"}` : "";
+    const sub = () => nb(cronHuman(cron)) + (a.source === "свой" ? " · свой агент" : "") + (opts.trial ? tried : "");
+    const row = $(`<div class="sr">${opts.switches === false ? "" : `<button class="sw ${on ? "on" : ""}" aria-label="включить"></button>`}<div class="w">${nb(a.title)}<small>${sub()}</small></div></div>`);
+    if (simpleCron(cron)) {
+      const [mi, h] = cron.split(" "); const t = $(`<input type="time" value="${h.padStart(2, "0")}:${mi.padStart(2, "0")}">`);
+      t.onchange = () => { const [hh, mm] = t.value.split(":"); const parts = cron.split(" "); parts[0] = String(+mm); parts[1] = String(+hh); cron = parts.join(" "); conf[a.id] = Object.assign({}, conf[a.id], {schedule: cron}); row.querySelector("small").innerHTML = sub(); onChange(conf, a.id, {schedule: cron}); };
+      row.appendChild(t);
+    }
+    if (opts.trial) { const b = button("Пробно", "ghost sm", () => opts.trial(a, b)); row.appendChild(b); }
+    const sw = row.querySelector(".sw");
+    if (sw) sw.onclick = (e) => { const v = !e.target.classList.contains("on"); e.target.classList.toggle("on", v); conf[a.id] = Object.assign({}, conf[a.id], {on: v}); onChange(conf, a.id, {on: v}); };
+    box.appendChild(row);
+  });
+  return box;
+}
+function fmtAt(iso) { const d = new Date(iso); return isNaN(d) ? "" : `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
+
+/* ---------- пробный прогон: ничего не отправляет и не меняет, показывает, что сделал бы ---------- */
+async function trialRun(agent, onTick) {
+  const k = (await call("trial", {agent})).started; const t0 = Date.now();
+  await waitJob(k, () => onTick && onTick(Math.round((Date.now() - t0) / 1000)));
+  return (await call("trial_report", {agent})).report;
+}
+function itemsOf(c) { return !c ? [] : Array.isArray(c) ? c : Array.isArray(c.items) ? c.items : [c]; }
+function actLine(a) {
+  const sub = (a.args || [])[0] || ""; const its = itemsOf(a.content);
+  const names = its.map(i => typeof i === "string" ? i : (i.title || i.subject || i.name || i.text || "")).filter(Boolean);
+  const list = names.length ? ": " + names.slice(0, 8).join("; ") + (names.length > 8 ? ` и ещё ${names.length - 8}` : "") : "";
+  if (a.cap === "tasks") return ({add: "Добавил бы задачи", complete: "Закрыл бы задачи", retime: "Перенёс бы задачи", confirm: "Подтвердил бы предложенные задачи", reject: "Отклонил бы предложенные задачи"}[sub] || "Задачи, " + sub) + list;
+  if (a.cap === "draft") return "Сохранил бы черновик письма" + (its.length ? ": " + its.map(i => `«${i.subject || "без темы"}»${i.to ? ", кому: " + [].concat(i.to).join(", ") : ""}`).join("; ") : "");
+  if (a.cap === "tg" && sub === "draft") return "Положил бы черновик ответа в Telegram" + list;
+  return `${a.cap} ${sub}`;
+}
+function reportView(r) {
+  const box = $(`<div class="rep"></div>`);
+  if (!r) { box.append($(`<div class="bad">${nb("Отчёта нет: пробный прогон не дошёл до конца. Подробности во вкладке «Журнал действий».")}</div>`)); return box; }
+  const isMsg = a => a.cap === "tg" && (a.args || [])[0] === "notify";
+  const msgs = r.actions.filter(isMsg), other = r.actions.filter(a => !isMsg(a));
+  box.append($(`<div class="${r.ok ? "" : "bad"}">${nb(r.ok ? `Пробный прогон «${r.title}» готов (${fmtAt(r.at)}). Ничего не отправлено и не изменено.` : `«${r.title}» не отработал. Что случилось:`)}</div>`));
+  if (!r.ok) box.append($(`<pre>${esc(r.answer || "")}</pre>`));
+  msgs.forEach(a => { const t = typeof a.content === "string" ? a.content : JSON.stringify(a.content || "", null, 1); box.append($(`<div class="lbl">${nb("ПРИШЛО БЫ ВАМ В БОТА")}</div>`), $(`<div class="msg">${esc(t.replace(/<[^>]+>/g, ""))}</div>`)); });
+  if (other.length) { box.append($(`<div class="lbl">${nb("СДЕЛАЛ БЫ")}</div>`)); other.forEach(a => box.append($(`<div class="li">${esc(actLine(a))}</div>`))); }
+  if (r.files.length) {
+    box.append($(`<div class="lbl">${nb("ЗАПИСАЛ БЫ В ПАПКУ")}</div>`));
+    r.files.forEach(f => box.append($(`<details><summary>${esc(f.path)} <span class="muted">${f.new ? "новый" : "изменён"}</span></summary>${f.text ? `<pre>${esc(f.text)}</pre>` : ""}</details>`)));
+  }
+  if (r.ok && !r.actions.length && !r.files.length) box.append($(`<div class="muted">${nb("Ничего бы не отправил и не записал: нового для этого агента сейчас нет.")}</div>`));
+  return box;
+}
+function stSchedule() {
+  say(nb("Когда присылать сводки? Пока все агенты выключены: сначала пробный прогон, потом включаете нужных по одному. Время можно поменять здесь или во вкладке «Расписание»."));
+  let conf = null;
+  say("", scheduleList(c => conf = c, {switches: false}));
+  input(button("Сохранить расписание", "", async () => { if (conf) await save({agents: conf}); next("Расписание сохранено"); }));
+}
+async function stCheck() {
+  const h = say('<span class="spin"></span>' + nb("Проверяю всё по очереди, это займёт до минуты…"));
+  const d = await call("doctor");
+  h.querySelector(".a-b").innerHTML = "";
+  const rows = String(d.text || "").split("\n").filter(Boolean);
+  const list = $(`<div class="doc"></div>`);
+  rows.forEach(r => list.appendChild($(`<div class="${r.startsWith("ок") ? "ok" : r.startsWith("НЕТ") ? "bad" : "muted"}">${esc(r.replace(/^ок\s+/, "✓ ").replace(/^НЕТ\s+/, "✗ "))}</div>`)));
+  h.querySelector(".a-b").append($(`<div>${nb("Вот что получилось:")}</div>`), list);
+  const mb = S.agents.find(a => a.id === "morning-briefing");
+  const finish = () => { say(nb("Остальных агентов включайте по одному во вкладке «Расписание»: у каждого там есть пробный прогон.")); input(button("Открыть «Расписание»", "", () => go("schedule")), button("Открыть «Доступы»", "ghost", () => go("access"))); };
+  const enable = () => button(`Включить утренний брифинг${mb ? ", " + cronHuman((P().agents || {})["morning-briefing"]?.schedule || mb.schedule) : ""}`, "fire", async (e) => {
+    e.target.disabled = true;
+    const r = await call("enable", {agent: "morning-briefing", on: true});
+    await save({setup_done: true}); await load();
+    say(r.error ? `<span class="bad">${nb(r.error)}</span>` : nb("Утренний брифинг включён, остальные агенты пока выключены."));
+    finish();
+  });
+  const later = () => button("Пока не включать", "ghost", async () => { await save({setup_done: true}); await load(); finish(); });
+  input(button("Пробный утренний брифинг", "fire", async (e) => {
+    e.target.disabled = true;
+    const w = say('<span class="spin"></span>' + nb("Собираю брифинг по-настоящему, но ничего не отправляю и не меняю: письма, задачи и Telegram остаются как были. Это 2-5 минут."));
+    const r = await trialRun("morning-briefing", s => { w.querySelector(".a-b").innerHTML = '<span class="spin"></span>' + nb(`Собираю пробный брифинг, ничего не отправляю. Прошло ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}.`); });
+    w.querySelector(".a-b").innerHTML = ""; w.querySelector(".a-b").appendChild(reportView(r));
+    say(nb(r && r.ok ? "Так будет выглядеть утренний брифинг. Включить его по расписанию?" : "Пробный прогон не получился. Можно проверить настройки и попробовать снова."));
+    input(...(r && r.ok ? [enable(), later()] : [button("Проверить снова", "", () => renderTalk()), later()]));
+  }), button("Проверить снова", "ghost", () => renderTalk()));
+}
+
+/* ---------- Б: доступы ---------- */
+async function renderAccess() {
+  view = "access"; tabs();
+  const m = document.getElementById("main"); m.innerHTML = "";
+  const main = $(`<div class="b-main"><div class="b-top"><h2>Доступы</h2></div><div class="b-sub">${nb("Включите то, что помощнику нужно видеть. На каждой карточке: что он может, чего не может и где данные.")}</div><div class="b-grid" id="grid"></div></div>`);
+  const side = $(`<div class="b-side"></div>`);
+  m.append(main, side);
+  const grid = main.querySelector("#grid");
+  // модель
+  const rt = P().runtime || {kind: "codex"};
+  const w = where(rt);
+  const fbr = P().fallback_runtime;
+  const mc = $(`<div class="b-c"><div class="b-h">${nb("Где думает помощник")}</div><div class="b-p">${nb(rt.kind === "codex" ? "Подписка ChatGPT" : rt.kind === "claude" ? "Подписка Claude" : (rt.model || "") + " · " + w.short)}</div>${fbr ? `<div class="b-p muted">${nb("Запасная, если основная не ответит: " + (fbr.kind === "codex" ? "подписка ChatGPT" : fbr.kind === "claude" ? "подписка Claude" : (fbr.model || "") + " · " + where(fbr).short))}</div>` : ""}<div class="b-p"><button class="btn ghost" style="min-height:34px;padding:0 12px">${nb("Сменить модель")}</button></div></div>`);
+  mc.querySelector("button").onclick = () => { step = 1; log = []; renderTalk(); };
+  // Telegram крупно
+  const ids = Object.keys(conns());
+  if (conns().telegram) {
+    const on = isOn("telegram");
+    const c = conns().telegram;
+    const card = $(`<div class="b-c big ${on ? "" : "off"}"><div class="b-h">Telegram<button class="sw ${on ? "on" : ""}"></button></div>
+      <div class="b-p">${nb(c.purpose)}</div><div class="lbl">${nb("ПАПКИ, КОТОРЫЕ ВИДИТ ПОМОЩНИК")}</div><div class="b-chips" id="chips"><span class="note">${on ? '<span class="spin"></span>загружаю' : nb("Telegram выключен")}</span></div>
+      <div class="b-cols"><div><div class="lbl">МОЖЕТ</div>${c.can.map(x => `<div class="li">${nb(x)}</div>`).join("")}</div><div><div class="lbl">НЕ МОЖЕТ</div>${c.cannot.map(x => `<div class="li no">${nb(x)}</div>`).join("")}</div></div></div>`);
+    card.querySelector(".sw").onclick = async () => { await setConn("telegram", !on); if (!on) { step = 4; log = []; return renderTalk(); } renderAccess(); };
+    grid.appendChild(card);
+    if (on) loadChips(card.querySelector("#chips"), side);
+  }
+  grid.appendChild(mc);  // модель справа от крупной карточки Telegram
+  // остальные коннекторы
+  ids.filter(id => id !== "telegram").forEach(id => {
+    const c = conns()[id], on = isOn(id);
+    const card = $(`<div class="b-c ${on ? "" : "off"}"><div class="b-h">${nb(c.title)}<button class="sw ${on ? "on" : ""}"></button></div><div class="b-p">${nb(c.purpose)}</div>
+      <details class="b-p"><summary>${nb("Может и не может")}</summary>${c.can.map(x => `<div class="li">${nb(x)}</div>`).join("")}${c.cannot.map(x => `<div class="li no">${nb(x)}</div>`).join("")}<div class="note" style="margin-top:6px">${nb(c.data)}</div></details></div>`);
+    card.querySelector(".sw").onclick = async () => {
+      await setConn(id, !on);
+      if (!on && id === "bitrix24") { step = 3; log = []; return renderTalk(); }
+      renderAccess();
+    };
+    grid.appendChild(card);
+  });
+  paintSide(side, (S.telegram || {}).folders || []);
+}
+async function loadChips(el, side) {
+  const f = await call("tg", {action: "folders"});
+  el.innerHTML = "";
+  if (f.error) { el.appendChild($(`<span class="note bad">${nb(f.error)}</span>`)); return; }
+  const sel = new Set(f.selected);
+  f.folders.forEach(x => {
+    const b = $(`<button class="b-chip ${sel.has(x.title) ? "on" : ""}">${esc(x.title)} <span class="muted" style="font-weight:400">${x.chats}</span></button>`);
+    b.onclick = async () => {
+      const n = new Set(sel); n.has(x.title) ? n.delete(x.title) : n.add(x.title);
+      if (!n.size) { alert("Должна остаться хотя бы одна папка. Чтобы закрыть Telegram совсем, выключите карточку."); return; }
+      const r = await call("tg", {action: "save_folders", folders: [...n]});
+      if (r.error) return alert(r.error);
+      sel.clear(); n.forEach(v => sel.add(v)); b.classList.toggle("on"); S.telegram.folders = [...sel]; paintSide(side, [...sel]);
+    };
+    el.appendChild(b);
+  });
+  S.telegram = Object.assign({}, S.telegram, {folders: f.selected});
+  paintSide(side, f.selected);
+}
+function paintSide(side, folders) {
+  const on = Object.keys(conns()).filter(isOn), off = Object.keys(conns()).filter(id => !isOn(id));
+  const seen = on.filter(id => id !== "telegram").map(id => conns()[id].title);
+  if (on.includes("telegram")) seen.push(`<b>${folders.length} ${folders.length === 1 ? "папку" : folders.length < 5 ? "папки" : "папок"} Telegram</b>: ${folders.map(esc).join(", ")}`);
+  side.innerHTML = "";
+  side.append($(`<div class="hd"><img class="av" src="/ogonyok.svg" alt="">${nb("Что увидит " + name())}</div>`),
+    $(`<div class="s">ВИДИТ</div>`), $(`<div class="r">${seen.length ? seen.map(x => x.startsWith("<b>") ? x : nb(x)).join(". ") + "." : nb("Пока ничего не подключено.")}</div>`),
+    $(`<div class="s">НЕ ВИДИТ</div>`), $(`<div class="r x">${nb((on.includes("telegram") ? "Чаты вне выбранных папок. Непрочитанные вами сообщения. " : "Telegram. ") + (off.filter(i => i !== "telegram").length ? off.filter(i => i !== "telegram").map(i => conns()[i].title).join(", ") + " (выключено)." : ""))}</div>`),
+    $(`<div class="s">КУДА УХОДЯТ ДАННЫЕ</div>`), $(`<div class="r">${where().text}${P().fallback_runtime ? " " + nb("Если основная модель не ответит, текст") + " " + where(P().fallback_runtime).to + "." : ""}</div>`),
+    $(`<div class="s">ЧТО ОТПРАВЛЯЕТ</div>`), $(`<div class="r">${nb("Только сообщения вам в ваш бот. Остальное черновики и ссылки: отправляете вы.")}</div>`));
+  const foot = $(`<div class="foot"></div>`);
+  foot.append(button("Расписание", "fire", () => go("schedule")), button("Журнал действий", "ghost", () => go("audit")));
+  side.appendChild(foot);
+}
+
+/* ---------- расписание, журнал, проверка ---------- */
+function renderSchedule() {
+  view = "schedule"; tabs();
+  const m = document.getElementById("main"); m.innerHTML = "";
+  const p = $(`<div class="panel"><h2>Расписание</h2><div class="b-sub">${nb("Когда помощник работает сам. Включайте агентов по одному: сначала «Пробно» покажет, что агент прислал бы и что сделал бы, ничего не отправляя и не меняя. Агент, который проверяет новое (бот, встречи, созвоны), запускает модель только если есть дело.")}</div></div>`);
+  const st = $(`<div class="note" style="margin-top:14px"></div>`);
+  const out = $(`<div style="margin-top:14px"></div>`);
+  let busy = false;
+  const apply = async (conf, id, change) => {
+    const a = S.agents.find(x => x.id === id);
+    st.textContent = "Сохраняю…";
+    const r = await call("enable", {agent: id, ...change});
+    const err = r.error || (Array.isArray(r) ? (r.find(x => x.error) || {}).error : null);
+    st.innerHTML = err ? `<span class="bad">${nb(err)}</span>` : nb(`«${a.title}» ${"on" in change ? (change.on ? "включён" : "выключен") : "по новому времени"}. Включены: ${(Array.isArray(r) ? r.filter(x => x.agent).map(x => x.title) : []).join(", ") || "никто"}.`);
+    await load();
+  };
+  const trial = async (a, b) => {
+    if (busy) { st.textContent = "Дождитесь конца текущего пробного прогона."; return; }
+    busy = true; b.disabled = true; out.innerHTML = "";
+    const w = $(`<div class="note"><span class="spin"></span>${nb(`«${a.title}»: пробный прогон, ничего не отправляю и не меняю. Это до нескольких минут.`)}</div>`); out.appendChild(w);
+    const r = await trialRun(a.id, s => { w.innerHTML = '<span class="spin"></span>' + nb(`«${a.title}»: пробный прогон, прошло ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}.`); });
+    out.innerHTML = ""; out.appendChild(reportView(r)); busy = false; b.disabled = false;
+  };
+  p.append(scheduleList(apply, {trial}), st, out);
+  m.appendChild(p);
+}
+async function renderAudit() {
+  view = "audit"; tabs();
+  const m = document.getElementById("main"); m.innerHTML = "";
+  const p = $(`<div class="panel"><h2>Журнал действий</h2><div class="b-sub">${nb("Что помощник читал и что делал, по каждому шагу. Содержимое писем и чатов в журнал не пишется, только что и сколько. Журнал лежит на этом компьютере в ~/.brief/audit.")}</div><div style="margin-bottom:12px"><span class="seg" id="dd"><button data-d="1" class="on">сегодня</button><button data-d="7">неделя</button></span></div><pre id="au">загружаю…</pre></div>`);
+  m.appendChild(p);
+  const show = async (d) => { p.querySelectorAll("#dd button").forEach(b => b.classList.toggle("on", b.dataset.d == d)); const r = await call("audit", {days: d}); p.querySelector("#au").textContent = r.text || r.error || ""; };
+  p.querySelectorAll("#dd button").forEach(b => b.onclick = () => show(b.dataset.d)); show(1);
+}
+function renderCheck() { step = STEPS.length - 1; log = []; renderTalk(); view = "check"; tabs(); }
+
+function tabs() { document.querySelectorAll(".tab").forEach(t => { t.classList.toggle("cur", t.dataset.view === view); t.disabled = !P().setup_done && t.dataset.view !== "talk"; }); }
+function go(v) { location.hash = v; }
+function route() {
+  const v = location.hash.slice(1) || (P().setup_done ? "access" : "talk");
+  if (!P().setup_done && v !== "talk") return renderTalk();
+  ({talk: () => { step = P().setup_done ? 0 : (P().setup_step || 0); log = []; renderTalk(); }, access: renderAccess, schedule: renderSchedule, audit: renderAudit, check: renderCheck}[v] || renderAccess)();
+}
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => { if (location.hash.slice(1) === t.dataset.view) route(); else go(t.dataset.view); });
+window.onhashchange = route;
+load().then(route).catch(e => { document.getElementById("main").innerHTML = `<div class="panel"><h2>Не открылось</h2><p class="note">${esc(e.message)}</p></div>`; });
+</script>
+</body>
+</html>
