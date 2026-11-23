@@ -265,6 +265,21 @@ print(json.dumps([json.loads(r1.stdout), json.loads(r2.stdout)], ensure_ascii=Fa
         self.assertGreater(ptr["строк"], 800)  # по строкам, чтобы читать частями
         self.assertEqual(len(json.loads(self.brief("run", "fake", "x").stdout)["items"]), 800)  # человеку как есть
 
+    def test_schedule_of_other_install_untouched(self):
+        """Тест или вторая установка с другим BRIEF_HOME не снимают и не переставляют чужое расписание."""
+        sys.path.insert(0, str(self.repo / "core"))
+        os.environ["BRIEF_HOME"] = str(self.home)
+        import importlib
+        import brief
+        importlib.reload(brief)
+        brief.schedule_owner = lambda: "/Users/кто-то/.brief/helpers/Огонёк.app/Contents/MacOS/ogonyok"
+        self.assertFalse(brief.schedule_mine())
+        with self.assertRaises(SystemExit) as e:
+            brief.cmd_schedule(["remove"])
+        self.assertIn("другая установка", str(e.exception))
+        brief.schedule_owner = lambda: str(self.home / "helpers/Огонёк.app/Contents/MacOS/ogonyok")
+        self.assertTrue(brief.schedule_mine())
+
     def test_every_write_command_is_listed(self):
         """Всё, что отправляет или меняет, отмечено в writes: иначе пробный прогон выполнил бы это по-настоящему."""
         risky = {"add", "complete", "retime", "confirm", "reject", "notify", "draft"}

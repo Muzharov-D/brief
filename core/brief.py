@@ -889,9 +889,28 @@ def cmd_doctor(_args):
             print(f"     Что сделать: {fix}")
 
 
+def schedule_owner():
+    """Чьё задание local.brief стоит в macOS: путь первой программы в нём, или None, если задания нет."""
+    import plistlib
+    f = Path.home() / "Library/LaunchAgents/local.brief.plist"
+    try:
+        return (plistlib.loads(f.read_bytes()).get("ProgramArguments") or [""])[0]
+    except (OSError, ValueError):
+        return None
+
+
+def schedule_mine():
+    """Задание принадлежит этой установке (её ~/.brief): вторая установка или тест не трогают чужое расписание."""
+    owner = schedule_owner()
+    return owner is None or Path(owner).resolve().is_relative_to(HOME.resolve())
+
+
 def cmd_schedule(args):
     sys.path.insert(0, str(CORE))
     import schedule  # noqa: E402
+    if (args[0] if args else "list") in ("install", "remove") and not schedule_mine():
+        sys.exit(f"Расписание на этом Mac ставила другая установка Огонька ({schedule_owner()}), не трогаю его. "
+                 "Выключите его там или удалите ту установку.")
     p = load_profile()
     jobs = {n: agent_settings(n, f, p) for n, f in agent_files(p).items()}
     app = HOME / "helpers" / "Огонёк.app" / "Contents" / "MacOS" / "ogonyok"
@@ -996,8 +1015,9 @@ def after_update():
     if PLATFORM == "mac":
         sync_helpers()
         la = Path.home() / "Library/LaunchAgents"
-        if (la / "local.brief.plist").exists() or list(la.glob("local.brief.*.plist")):
-            cmd_schedule(["install"])  # расписание было включено: переставляем; выключенное не трогаем
+        mine = schedule_owner() is not None and schedule_mine()
+        if mine or list(la.glob("local.brief.*.plist")):
+            cmd_schedule(["install"])  # расписание этой установки было включено: переставляем; чужое и выключенное не трогаем
 
 
 def sync_helpers():
