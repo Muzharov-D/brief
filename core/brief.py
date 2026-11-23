@@ -13,6 +13,7 @@
   brief doctor                          проверка: что работает, что нет и что сделать
   brief schedule install|remove|list    расписание агентов в macOS
   brief update                          обновить ядро и агентов, свои настройки не трогает
+  brief access                          Mac: вызвать запросы macOS на доступ для работы в фоне (нажать «Разрешить»)
 Где что лежит:
   ядро и стандартные агенты: эта папка (git), обновляется командой brief update
   настройки, ключи, журнал аудита: ~/.brief (BRIEF_HOME), наружу не уходят
@@ -961,6 +962,7 @@ def cmd_doctor(_args):
         except (ValueError, AttributeError):
             err = None if code == 0 else out[:120]
         rows.append((spec.get("title", cid), code == 0 and not err, str(err or "")[:120], spec.get("setup", "")[:160]))
+    rows += access_rows(p)
     for name, ok, detail, fix in rows:
         print(f"{'ок ' if ok else 'НЕТ'}  {name}{('  ' + detail) if detail else ''}")
         if not ok and fix:
@@ -1125,6 +1127,16 @@ def sync_helpers():
             subprocess.run(["xattr", "-cr", str(dst)]).returncode == 0 and \
             subprocess.run(["codesign", "--force", "-s", "-", str(dst)], capture_output=True).returncode == 0
         print(f"{'обновлён' if ok else 'НЕ подписался'} помощник {app.stem}")
+        if ok and app.name == "Огонёк.app":
+            known.pop("в Программах", None)
+    main = HOME.resolve() == (Path.home() / ".brief").resolve()  # тест или вторая установка Программы не трогают
+    if PLATFORM == "mac" and main and (dst_dir / "Огонёк.app").exists() and not known.get("в Программах"):
+        # копия в ~/Applications: Огонёк находится через Spotlight и Dock. Ставим при установке и после обновления;
+        # если человек её удалил, а приложение не менялось, не возвращаем
+        apps = Path.home() / "Applications"
+        apps.mkdir(exist_ok=True)
+        subprocess.run(["rm", "-rf", str(apps / "Огонёк.app")])
+        known["в Программах"] = subprocess.run(["ditto", str(dst_dir / "Огонёк.app"), str(apps / "Огонёк.app")]).returncode == 0
     known_f.parent.mkdir(parents=True, exist_ok=True)
     known_f.write_text(json.dumps(known, ensure_ascii=False), encoding="utf-8")
 
@@ -1135,9 +1147,82 @@ def cmd_setup(args):
     wizard.main(args)
 
 
+# Что macOS разрешает отдельно приложению Огонёк, от имени которого идёт расписание.
+# Из Терминала или мастера всё работает, а в фоне macOS ждёт ответа на окно «Огонёк хочет управлять Почтой»:
+# ночью его никто не видит, и чтение почты падает через 2 минуты (так было 23.11 с вечерним разбором).
+def as_list(v):
+    return v if isinstance(v, list) else ([v] if v else [])
+
+
+BG_ACCESS = {"mail": ("apple-mail", ["1", "5"], "Почта")}
+ACCESS_FILE = STATE / "доступ-в-фоне.json"
+
+
+def access_kind(code, out):
+    """ok, denied (запрещено в Настройках), no_answer (окно осталось без ответа) или error."""
+    if code == 0:
+        return "ok"
+    if "-1743" in out or "not authorized" in out.lower() or "не разрешено" in out.lower():
+        return "denied"
+    if "-1712" in out or code == 124:
+        return "no_answer"
+    return "error"
+
+
+def cmd_access(args):
+    """brief access: при настройке, пока человек за компьютером, вызвать запросы macOS от имени Огонёк.app.
+    Окно «Разрешить» появляется сейчас, а не в 8 утра, когда брифинг работает в фоне."""
+    p = load_profile()
+    todo = {cap: v for cap, v in BG_ACCESS.items() if v[0] in as_list(p.get("connectors", {}).get(cap))}
+    if args[:1] == ["inner"]:  # уже внутри Огонёк.app: обращаемся к приложениям, macOS спрашивает от его имени
+        os.environ["BRIEF_ACTOR"] = "проверка доступа в фоне"
+        res = {}
+        for cap, (_cid, cargs, title) in todo.items():
+            code, out = cmd_run([cap, *cargs], capture=True, timeout=150)
+            res[cap] = {"title": title, "status": access_kind(code, out)}
+        print(json.dumps(res, ensure_ascii=False))
+        return
+    app = HOME / "helpers" / "Огонёк.app"
+    if PLATFORM != "mac" or not todo or not app.exists():
+        res = {}
+    else:
+        f = STATE / f"access-{os.getpid()}.json"
+        STATE.mkdir(parents=True, exist_ok=True)
+        try:  # через open: тогда для macOS это запуск Огонька, а не дочерний процесс Терминала
+            subprocess.run(["open", "-W", "-n", "-g", "--stdout", str(f), "--stderr", "/dev/null", "-a", str(app),
+                            "--args", "access", "inner"], timeout=400, capture_output=True)
+            res = json.loads(f.read_text(encoding="utf-8").strip().splitlines()[-1])
+        except (subprocess.TimeoutExpired, OSError, ValueError, IndexError):
+            res = {cap: {"title": v[2], "status": "error"} for cap, v in todo.items()}
+        finally:
+            f.unlink(missing_ok=True)
+        res = {k: dict(v, at=datetime.now().isoformat(timespec="seconds")) for k, v in res.items()}
+        ACCESS_FILE.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
+    print(json.dumps(res, ensure_ascii=False))
+
+
+def access_rows(p):
+    """Для brief doctor: что Огоньку разрешено в фоне по последней проверке."""
+    try:
+        last = json.loads(ACCESS_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        last = {}
+    fix = ("Системные настройки, Конфиденциальность и безопасность, Автоматизация: у Огонька включите {t}. "
+           "Или запустите brief access и нажмите «Разрешить».")
+    rows = []
+    for cap, (cid, _a, title) in BG_ACCESS.items():
+        if PLATFORM != "mac" or cid not in as_list(p.get("connectors", {}).get(cap)):
+            continue
+        st = (last.get(cap) or {}).get("status")
+        detail = {"ok": "", None: "не проверено: brief access", "denied": "запрещено",
+                  "no_answer": "окно macOS осталось без ответа"}.get(st, "ошибка проверки")
+        rows.append((f"{title} в фоне", st == "ok", detail, fix.format(t=title)))
+    return rows
+
+
 COMMANDS = {"setup": cmd_setup, "run": cmd_run, "agent": cmd_agent, "agents": cmd_agents, "connectors": cmd_connectors,
             "profile": cmd_profile, "audit": cmd_audit, "doctor": cmd_doctor, "schedule": cmd_schedule, "tick": cmd_tick,
-            "update": cmd_update}
+            "update": cmd_update, "access": cmd_access}
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:

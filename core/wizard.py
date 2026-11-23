@@ -209,6 +209,8 @@ def api(name, body):
         return sh(["schedule", "install"], 120)
     if name == "audit":
         return sh(["audit", str(int(body.get("days", 1)))], 30)
+    if name == "bg_access":  # запросы macOS от имени Огонька, пока человек за компьютером
+        return start_job("bg-access", ["access"], 420)
     if name == "feed":  # главная после настройки: то, что ушло в Telegram, и состояние агентов
         return {"items": brief.feed(int(body.get("days", 7))), "agents": brief.agent_status(),
                 "schedule": brief.PLATFORM == "mac" and brief.schedule_owner() is not None and brief.schedule_mine()}

@@ -410,6 +410,16 @@ print('Готово от Claude')
         st = {a["id"]: a for a in brief.agent_status()}
         self.assertTrue(st["тест"]["last"]["ok"])
 
+    def test_access_kinds(self):
+        """Ответы macOS на проверку доступа в фоне: разрешено, запрещено, окно без ответа."""
+        sys.path.insert(0, str(self.repo / "core"))
+        import brief
+        self.assertEqual(brief.access_kind(0, "[]"), "ok")
+        self.assertEqual(brief.access_kind(1, "Ошибка: Не разрешено отправлять события Apple в Mail. (-1743)"), "denied")
+        self.assertEqual(brief.access_kind(1, "Время AppleEvent истекло. (-1712)"), "no_answer")
+        self.assertEqual(brief.access_kind(124, ""), "no_answer")
+        self.assertIn("brief access", brief.__doc__)
+
     def test_failure_told_once(self):
         rec, env = self._fallback_env("auth")
         for _ in range(2):

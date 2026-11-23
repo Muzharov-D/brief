@@ -29,6 +29,8 @@ for a in "$ROOT/helpers/"*.app; do
   dst="$HOMEB/helpers/$(basename "$a")"
   rm -rf "$dst"; ditto --noextattr "$a" "$dst" && xattr -cr "$dst" && codesign --force -s - "$dst" 2>/dev/null || fail "не подписался $(basename "$a")"
 done
+# Огонёк в Программах: находится через Spotlight, можно закрепить в Dock. Расписание работает от копии в ~/.brief/helpers
+mkdir -p "$HOME/Applications" && rm -rf "$HOME/Applications/Огонёк.app" && ditto "$HOMEB/helpers/Огонёк.app" "$HOME/Applications/Огонёк.app"
 cat > "$HOMEB/bin/brief" <<EOF
 #!/bin/bash
 exec "$ROOT/core/brief" "\$@"

@@ -401,10 +401,27 @@ function stMail() {
   const list = $(`<div class="a-fl"></div>`);
   const paint = () => { list.innerHTML = ""; ids.forEach(id => { const b = $(`<button class="a-f"><span class="chk ${on[id] ? "on" : ""}"></span>${nb(conns()[id].title)}</button>`); b.onclick = () => { on[id] = !on[id]; paint(); }; list.appendChild(b); }); };
   paint(); say(nb("Что подключаем?"), list);
-  input(button("Дальше", "", async () => {
+  input(button("Дальше", "", async (e) => {
     for (const id of ids) await setConn(id, on[id]);
+    if (mac && on["apple-mail"] && !(await bgAccess(e.target))) return;
     next(ids.filter(i => on[i]).map(i => conns()[i].title).join(", ") || "Не подключать");
   }), $(`<span class="q">${nb("macOS спросит разрешение при первом обращении: нажмите «Разрешить».")}</span>`));
+}
+// По расписанию Огонёк работает от своего имени, и macOS спрашивает про Почту отдельно. Спрашиваем сейчас,
+// иначе окно появится в 8 утра, его никто не увидит и брифинг уйдёт без почты.
+async function bgAccess(btn) {
+  const label = btn.textContent;
+  say(nb(`Сейчас проверю Почту так, как буду читать её по расписанию. Если появится окно «${name()} хочет управлять приложением Mail», нажмите «Разрешить». Это до двух минут.`));
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Проверяю Почту';
+  const r = await waitJob((await call("bg_access")).started);
+  btn.disabled = false; btn.textContent = label;
+  const st = (r.mail || {}).status;
+  if (!st || st === "ok") { if (st) say(`<span class="ok">${nb("Почта по расписанию читается.")}</span>`); return true; }
+  say(`<span class="bad">${nb(st === "denied" ? "macOS запретила мне Почту." : st === "no_answer" ? "Окно с вопросом осталось без ответа." : "Почту проверить не получилось.")}</span> `
+    + nb(`Откройте Системные настройки, Конфиденциальность и безопасность, Автоматизация, найдите «${name()}» и включите Mail. Потом нажмите «Дальше» ещё раз.`));
+  const skip = button("Пропустить", "ghost", () => next("Почта без работы по расписанию"));
+  document.getElementById("ain").appendChild(skip);
+  return false;
 }
 
 function stTasks() {
