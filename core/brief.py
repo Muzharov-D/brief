@@ -205,6 +205,18 @@ def connector_env(p):
     return env
 
 
+def tg_reading(p):
+    """Подключено ли чтение чатов Telegram: вход в аккаунт и выбранные папки (те же файлы, что в tg.py).
+    Без него Telegram только доставляет сообщения через бота."""
+    data = Path(connector_env(p)["BRIEF_TG_DATA"])
+    return "telegram" in bound("tg", p) and (data / "briefing.session").exists() and (data / "access.json").exists()
+
+
+TG_OFF_NOTE = ("\n\nЧтение чатов Telegram у владельца не подключено: команды `run tg inbox`, `sent`, `saved`, `find`, "
+               "`links`, `channels` ничего не вернут, не вызывай их. Раздел Telegram пропусти и напиши одной строкой "
+               "«Telegram: чтение чатов не подключено». Сообщение владельцу через `run tg notify` работает как обычно.\n")
+
+
 def bound(cap, p):
     """Какие коннекторы подключены к возможности. Задачи можно вести сразу в нескольких системах: первая основная."""
     v = (p.get("connectors") or {}).get(cap)
@@ -510,13 +522,15 @@ def agent_settings(name, md, p):
     return {"title": h.get("title", name), "schedule": a.get("schedule", h.get("schedule", "")),
             "on": a.get("on", False), "runtime": a.get("runtime") or p.get("runtime") or {"kind": "codex"},
             "source": "свой" if md.parent.name == "Агенты" else "стандартный", "description": h.get("description", ""),
-            "fallback": h.get("fallback", "")}
+            "fallback": h.get("fallback", ""), "needs": h.get("needs", "")}
 
 
 def render(md, p):
     body = re.sub(r"\A---\n.*?\n---\n", "", md.read_text(encoding="utf-8"), count=1, flags=re.S)
     body = body.replace("{ИМЯ}", p.get("name") or "владелец компьютера").replace("{ПАПКА}", str(workspace(p)))
     body = body.replace("{ПОМОЩНИК}", p.get("assistant_name") or "Огонёк")
+    if "telegram" in bound("tg", p) and not tg_reading(p):
+        body += TG_OFF_NOTE  # чтение чатов по желанию: агент честно пишет, что его нет, а не падает
     if p.get("gender") == "f":
         pairs = json.loads((ROOT / "templates/род-ж.json").read_text(encoding="utf-8")) \
             if (ROOT / "templates/род-ж.json").exists() else []
@@ -596,6 +610,12 @@ def cmd_agent(args):
             return
     os.environ["BRIEF_AGENT"] = name
     try:
+        if "tg-read" in s["needs"].split() and not tg_reading(p):  # агенту нечего делать без чтения чатов
+            say("пропуск: чтение чатов Telegram не подключено")
+            if dry:
+                dry_report(name, s, 1, "Этому агенту нужны ваши чаты Telegram, а их чтение не подключено. "
+                                       "Подключить: вкладка «Доступы», «Подключить чаты Telegram».", snap)
+            return
         sys.path.insert(0, str(CORE))
         import gate  # noqa: E402
         if not force:
@@ -833,7 +853,9 @@ def digest(p, s, reason):
         else:
             lines.append(f"<b>Почта</b>: {err}")
     tg, err = get("tg", "inbox", "16")
-    if tg is not None or err:
+    if isinstance(tg, dict) and tg.get("not_connected"):
+        lines.append("<b>Telegram</b>: чтение чатов не подключено")
+    elif tg is not None or err:
         if isinstance(tg, dict):
             names = [escape(c.get("chat") or "") for c in tg.get("awaiting_reply", [])]
             lines.append("<b>Telegram</b>: " + (f"ждут ответа {', '.join(names[:10])}" if names else "ответа никто не ждёт")
@@ -1070,14 +1092,21 @@ def cmd_doctor(_args):
         except LookupError as e:
             code, out = 1, json.dumps({"error": str(e)}, ensure_ascii=False)
         try:
-            err = json.loads(out).get("error")
+            d = json.loads(out)
+            err = d.get("error")
         except (ValueError, AttributeError):
-            err = None if code == 0 else out[:120]
+            d, err = {}, None if code == 0 else out[:120]
+        if code == 0 and isinstance(d.get("rows"), list):  # коннектор проверяет части отдельно (Telegram: бот и чтение)
+            rows += [(r.get("name", cid), "off" if r.get("off") else bool(r.get("ok")), str(r.get("detail") or "")[:120],
+                      str(r.get("fix") or "")[:160]) for r in d["rows"]]
+            continue
         rows.append((spec.get("title", cid), code == 0 and not err, str(err or "")[:120], spec.get("setup", "")[:160]))
     rows += access_rows(p)
-    for name, ok, detail, fix in rows:
-        print(f"{'ок ' if ok else 'НЕТ'}  {name}{('  ' + detail) if detail else ''}")
-        if not ok and fix:
+    for name, ok, detail, fix in rows:  # ok == "off": выключено по выбору владельца, не ошибка
+        print(f"{'выкл' if ok == 'off' else 'ок ' if ok else 'НЕТ'}  {name}{('  ' + detail) if detail else ''}")
+        if ok == "off" and fix:
+            print(f"     Если нужно: {fix}")
+        elif not ok and fix:
             print(f"     Что сделать: {fix}")
 
 

@@ -35,6 +35,22 @@ if (-not $Root -or -not (Test-Path (Join-Path $Root "core\brief.py"))) {
     } catch { Fail "не скачался архив Огонька. Проверьте интернет." }
     $Root = (Get-ChildItem $tmp -Directory | Select-Object -First 1).FullName
 }
+# Общие ключи приложения Telegram (telegram-app.json от того, кто дал Огонька): с ними не нужно заводить
+# своё приложение на my.telegram.org. Ищем рядом с установщиком и в Загрузках, кладём в ~/.brief.
+$keyDirs = @($Root, (Split-Path -Parent $Root), (Join-Path $HOME "Downloads"))
+if ($PSCommandPath) { $keyDirs += (Split-Path -Parent $PSCommandPath) }
+foreach ($d in $keyDirs) {
+    $k = Join-Path $d "telegram-app.json"
+    if (-not (Test-Path $k) -or (Test-Path (Join-Path $HomeB "telegram-app.json"))) { continue }
+    try { $j = Get-Content $k -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $j = $null }
+    if ($j -and "$($j.api_id)" -match "^\d+$" -and "$($j.api_hash)" -match "^[0-9a-fA-F]{32}$") {
+        New-Item -ItemType Directory -Force -Path $HomeB | Out-Null
+        Copy-Item $k (Join-Path $HomeB "telegram-app.json") -Force
+        Write-Host "Ключи приложения Telegram взяты из $k"
+    } else {
+        Write-Host "Файл $k не похож на ключи Telegram, пропускаю."
+    }
+}
 if ((Resolve-Path $Root).Path.TrimEnd("\") -ne $Dest.TrimEnd("\")) {
     Step "Переношу Огонька в $Dest"
     New-Item -ItemType Directory -Force -Path $Dest | Out-Null

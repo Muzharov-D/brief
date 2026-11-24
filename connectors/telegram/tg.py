@@ -1,8 +1,13 @@
 """Чтение Telegram для брифинга. Только чтение: ничего не отправляет и не отмечает прочитанным.
 
 Ключи и сессия лежат вне iCloud, в ~/.local/share/briefing-telegram (права 600).
+Ключи приложения (api_id, api_hash): свои ключи человека в config.json, если он их завёл на my.telegram.org;
+иначе общие ключи Огонька из ~/.brief/telegram-app.json (вне репозитория, права 600).
 
-  run tg login                 вход: api_id, api_hash, телефон, код и пароль вводятся в терминале
+  run tg login                 вход в терминале: телефон, код и пароль (api_id и api_hash, только если нет общих)
+  run tg gui-login             вход без терминала: QR-код с телефона
+  run tg status                что настроено, без обращения к Telegram
+  run tg check                 проверка для brief doctor: бот и чтение чатов отдельно
   run tg inbox [часов=16]      JSON: awaiting_reply (чаты, которые владелец открыл, а последнее сообщение
                               не его), unread_not_opened (только число непрочитанных чатов). Непрочитанное
                               не читается вообще: если владелец чат не открыл, агент его тоже не открывает
@@ -46,6 +51,9 @@ BOT = DATA / "bot.json"          # {"token", "chat_id"}: бот, который 
 BOT_INBOX = DATA / "bot_inbox.json"  # что владелец прислал боту: голосовые и заметки
 NOTIFIED = DATA / "notified.json"  # id сообщений в «Избранном», которые прислал сам агент
 ACCESS = DATA / "access.json"  # {"folders": ["Папка", ...]}: агентам видны только чаты из этих папок Telegram
+# общие ключи Огонька: один api_id на всех, лежит у человека на компьютере, в публичный репозиторий не попадает
+APP_SHARED = Path(os.environ.get("BRIEF_TG_APP")
+                  or Path(os.environ.get("BRIEF_HOME") or (Path.home() / ".brief")) / "telegram-app.json")
 TEXT_CHARS = 500
 MAX_MESSAGES = 15
 
@@ -162,16 +170,69 @@ class ReadOnlyClient(TelegramClient):
         return await super().__call__(request, *a, **k)
 
 
+def read_keys(f):
+    """api_id и api_hash из файла. None, если файла нет или в нём не ключи."""
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+        keys = {"api_id": int(d["api_id"]), "api_hash": str(d["api_hash"]).strip().lower()}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+    if keys["api_id"] <= 0 or len(keys["api_hash"]) != 32 or any(c not in "0123456789abcdef" for c in keys["api_hash"]):
+        return None
+    try:
+        if f.stat().st_mode & 0o077:
+            f.chmod(0o600)  # ключи видит только владелец компьютера
+    except OSError:
+        pass
+    return keys
+
+
+def app_keys():
+    """Ключи приложения Telegram по порядку: свои ключи человека (как раньше), иначе общие ключи Огонька.
+    Возвращает (ключи, "own" | "shared") или (None, None)."""
+    own = read_keys(CONFIG)
+    if own:
+        return own, "own"
+    shared = read_keys(APP_SHARED)
+    if shared:
+        return shared, "shared"
+    return None, None
+
+
 def load_config():
-    if not CONFIG.exists():
-        sys.exit(json.dumps({"error": "Telegram не подключён: запусти run tg login"}, ensure_ascii=False))
-    return json.loads(CONFIG.read_text())
+    keys, _ = app_keys()
+    if not keys:
+        sys.exit(json.dumps({"error": "нет ключей приложения Telegram: положите telegram-app.json в ~/.brief "
+                                      "или войдите со своими ключами (run tg gui-login)"}, ensure_ascii=False))
+    return keys
+
+
+def device():
+    """Как вход виден в Telegram (Настройки, Устройства): обычный компьютер, а не выдуманное устройство."""
+    import platform
+    if sys.platform == "darwin":
+        return "Mac", ("macOS " + platform.mac_ver()[0]).strip()
+    if sys.platform == "win32":
+        return "PC", ("Windows " + platform.release()).strip()
+    return "PC", platform.system() or "Linux"
 
 
 def client(cfg):
+    model, system = device()
     return ReadOnlyClient(str(SESSION), cfg["api_id"], cfg["api_hash"],
                           connection_retries=10, retry_delay=3, request_retries=6, timeout=20,
-                          device_model="Briefing (Mac)", app_version="1.0", system_version="macOS")
+                          device_model=model, app_version="1.0", system_version=system,
+                          lang_code="ru", system_lang_code="ru-RU")
+
+
+def reading_ready():
+    """Чтение чатов подключено: есть вход в аккаунт и выбраны папки. Без этого работает только бот."""
+    return Path(str(SESSION) + ".session").exists() and ACCESS.exists()
+
+
+NOT_CONNECTED = {"not_connected": True,
+                 "message": "Чтение чатов Telegram не подключено. Раздел Telegram пропусти и напиши одной строкой: "
+                            "«Telegram: чтение чатов не подключено». Сообщения владельцу через бота (tg notify) работают."}
 
 
 def name_of(entity):
@@ -199,9 +260,8 @@ def local(dt):
 
 async def login():
     DATA.mkdir(mode=0o700, parents=True, exist_ok=True)
-    if CONFIG.exists():
-        cfg = json.loads(CONFIG.read_text())
-    else:
+    cfg, _ = app_keys()
+    if not cfg:
         print("api_id и api_hash берутся на https://my.telegram.org, API development tools. В форме: App title и Short name любые латиницей (например ogonyok), URL пустой, Platform: Desktop, Create app.")
         print("Там App api_id это число (обычно 7–9 цифр), App api_hash это строка из 32 букв и цифр.\n")
         while True:
@@ -336,7 +396,7 @@ async def gui_login():
     from telethon.errors import SessionPasswordNeededError
 
     DATA.mkdir(mode=0o700, parents=True, exist_ok=True)
-    if not CONFIG.exists():
+    if not app_keys()[0]:  # общих ключей нет: запасной путь, свои ключи с my.telegram.org
         hint = "Скопируй с my.telegram.org, API development tools.\n\n"
         while True:
             digits = "".join(ch for ch in dialog(hint + "App api_id (число):") if ch.isdigit())
@@ -353,7 +413,7 @@ async def gui_login():
         CONFIG.chmod(0o600)
         print("ключи сохранены")
 
-    c = client(json.loads(CONFIG.read_text()))
+    c = client(load_config())
     await c.connect()
     if not await c.is_user_authorized():
         qr_file = DATA / "login-qr.svg"
@@ -446,10 +506,41 @@ def access_save(titles):
 
 
 def status():
-    """Что уже настроено, без обращения к Telegram."""
+    """Что уже настроено, без обращения к Telegram. keys: "own" свои, "shared" общие ключи Огонька, null нет."""
     folders = json.loads(ACCESS.read_text(encoding="utf-8")).get("folders", []) if ACCESS.exists() else []
-    print(json.dumps({"keys": CONFIG.exists(), "session": Path(str(SESSION) + ".session").exists(),
-                      "bot": BOT.exists(), "folders": folders}, ensure_ascii=False))
+    bot = json.loads(BOT.read_text()).get("username", "") if BOT.exists() else ""
+    print(json.dumps({"keys": app_keys()[1], "session": Path(str(SESSION) + ".session").exists(),
+                      "bot": BOT.exists(), "bot_name": bot, "folders": folders, "reading": reading_ready()},
+                     ensure_ascii=False))
+
+
+async def check():
+    """Для brief doctor: бот и чтение чатов отдельными строками. Чтение по желанию: без него строка «выкл»."""
+    rows = []
+    if BOT.exists():
+        cfg = json.loads(BOT.read_text())
+        r = bot_call(cfg["token"], "getMe", {})
+        rows.append({"name": "Telegram: бот", "ok": bool(r.get("ok")),
+                     "detail": "@" + r["result"]["username"] if r.get("ok") else str(r.get("description", ""))[:120],
+                     "fix": "brief setup, шаг Telegram: подключите бота заново"})
+    else:
+        rows.append({"name": "Telegram: бот", "ok": False, "detail": "не подключён",
+                     "fix": "brief setup, шаг Telegram: свой бот через @BotFather"})
+    if not reading_ready():
+        rows.append({"name": "Telegram: чтение чатов", "off": True, "detail": "не подключено, по желанию",
+                     "fix": "brief setup, Доступы: «Подключить чаты Telegram»"})
+    else:
+        c = client(load_config())
+        await TelegramClient.connect(c)
+        try:
+            ok = await c.is_user_authorized()
+        finally:
+            await c.disconnect()
+        rows.append({"name": "Telegram: чтение чатов", "ok": ok,
+                     "detail": "папки: " + ", ".join(json.loads(ACCESS.read_text(encoding="utf-8")).get("folders", []))
+                     if ok else "вход больше не действует",
+                     "fix": "brief setup, Доступы: «Подключить чаты Telegram»"})
+    print(json.dumps({"rows": rows}, ensure_ascii=False))
 
 
 async def inbox(hours):
@@ -856,10 +947,20 @@ def warn_shared(cfg, store, first_id):
 
 async def bot_setup():
     """Бот для брифингов: владелец создаёт его в @BotFather, токен вводит в окне macOS (не печатается),
-    затем жмёт Start в боте. Сохраняется только чат владельца, проверка по его id."""
-    c = await connected()
-    me = await c.get_me()
-    await c.disconnect()
+    затем жмёт Start в боте по ссылке с одноразовым кодом. Вход в аккаунт Telegram для этого не нужен:
+    сохраняется только тот чат, где нажали Start с этим кодом (и, если вход уже есть, только с его аккаунта)."""
+    import secrets
+    me_id = None
+    if Path(str(SESSION) + ".session").exists() and app_keys()[0]:
+        try:
+            c = client(load_config())
+            await TelegramClient.connect(c)
+            if await c.is_user_authorized():
+                me_id = (await c.get_me()).id
+            await c.disconnect()
+        except Exception:  # noqa: BLE001  вход сломан: обойдёмся кодом
+            me_id = None
+    code = secrets.token_urlsafe(9).replace("-", "x").replace("_", "y")
     token = dialog("Токен бота от @BotFather (вставь и нажми OK):", hidden=True).strip()
     info = bot_call(token, "getMe", {})
     if not info.get("ok"):
@@ -871,23 +972,32 @@ async def bot_setup():
                                       "боте теряют сообщения друг друга. Создайте нового бота в @BotFather "
                                       "и вставьте его токен."}, ensure_ascii=False))
     import webbrowser
-    webbrowser.open(f"https://t.me/{username}?start=brief")
-    notify(f"В Telegram откроется @{username}. Нажми в нём «Start» (Запустить), потом OK здесь.")
-    chat_id = None
-    for _ in range(3):
-        upd = bot_call(token, "getUpdates", {"timeout": 20})
-        for u in upd.get("result", []):
-            m = u.get("message") or {}
-            if (m.get("from") or {}).get("id") == me.id and (m.get("chat") or {}).get("type") == "private":
-                chat_id = m["chat"]["id"]
-        if chat_id:
-            break
+    webbrowser.open(f"https://t.me/{username}?start={code}")
+    notify(f"В Telegram откроется @{username}. Нажмите в нём «Start» (Запустить), потом OK здесь.\n\n"
+           f"Если Telegram на этом компьютере не открылся, отправьте боту с телефона сообщение:\n/start {code}")
+    chat_id = start_chat(token, code, me_id)
     if not chat_id:
-        sys.exit(json.dumps({"error": f"не вижу нажатия Start от тебя в @{username}, запусти bot-setup ещё раз"}, ensure_ascii=False))
+        sys.exit(json.dumps({"error": f"не вижу нажатия Start в @{username}, подключите бота ещё раз"}, ensure_ascii=False))
+    DATA.mkdir(mode=0o700, parents=True, exist_ok=True)  # бот бывает первым: до входа в аккаунт
     BOT.write_text(json.dumps({"token": token, "chat_id": chat_id, "username": username}))
     os.chmod(BOT, 0o600)
     bot_call(token, "sendMessage", {"chat_id": chat_id, "text": "Готово. Сюда будут приходить брифинги."})
     print(json.dumps({"ok": True, "bot": username}, ensure_ascii=False))
+
+
+def start_chat(token, code, me_id=None, rounds=3):
+    """Чат владельца: личный чат, где пришло «/start <код>» (код знает только тот, кто настраивает).
+    Если вход в аккаунт есть, ещё и отправитель должен быть самим владельцем."""
+    for _ in range(rounds):
+        upd = bot_call(token, "getUpdates", {"timeout": 20})
+        for u in upd.get("result", []):
+            m = u.get("message") or {}
+            if (m.get("chat") or {}).get("type") != "private" or (m.get("text") or "").strip() != f"/start {code}":
+                continue
+            if me_id and (m.get("from") or {}).get("id") != me_id:
+                continue
+            return m["chat"]["id"]
+    return None
 
 
 async def draft(path, force=False):
@@ -984,6 +1094,8 @@ def _main():
         access_save(sys.argv[2:])
     elif cmd == "status":
         status()
+    elif cmd == "check":
+        asyncio.run(check())
     elif cmd == "access":
         asyncio.run(access_setup())
     elif cmd == "bot-setup":
@@ -1000,11 +1112,15 @@ def _main():
 
 
 READ_ONLY = {"inbox", "sent", "saved", "voices", "channels", "find", "birthdays"}
+NEEDS_READING = READ_ONLY | {"links", "draft"}  # без входа в аккаунт и выбранных папок не работают
 
 if __name__ == "__main__":
     # связь с Telegram время от времени рвётся (сброс соединения, таймаут): чтение повторяем,
     # а вместо трейсбека отдаём JSON с ошибкой, чтобы агенты и voice.py её поняли
     _cmd = sys.argv[1] if len(sys.argv) > 1 else "inbox"
+    if _cmd in NEEDS_READING and not reading_ready():  # чтение по желанию: агент пропускает раздел, а не падает
+        print(json.dumps(NOT_CONNECTED, ensure_ascii=False))
+        sys.exit(0)
     _tries = 3 if _cmd in READ_ONLY else 1
     for _i in range(_tries):
         try:

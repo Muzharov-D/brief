@@ -12,6 +12,18 @@ echo "Огонёк: личный помощник на этом компьюте
 echo "Сейчас поставлю нужные программы (5-15 минут, один раз), потом откроется страница настройки."
 
 [ "$(sw_vers -productVersion | cut -d. -f1)" -ge 14 ] || fail "нужна macOS 14 или новее."
+# Общие ключи приложения Telegram (telegram-app.json от того, кто дал Огонька): с ними не нужно заводить
+# своё приложение на my.telegram.org. Ищем рядом с установщиком и в Загрузках, кладём в ~/.brief с правами 600.
+for k in "$ROOT/telegram-app.json" "$(dirname "$ROOT")/telegram-app.json" "$HOME/Downloads/telegram-app.json"; do
+  [ -f "$k" ] && [ ! -f "$HOMEB/telegram-app.json" ] || continue
+  id="$(plutil -extract api_id raw -o - "$k" 2>/dev/null)"; hash="$(plutil -extract api_hash raw -o - "$k" 2>/dev/null)"
+  if [[ "$id" =~ ^[0-9]+$ && "$hash" =~ ^[0-9a-fA-F]{32}$ ]]; then
+    mkdir -p "$HOMEB" && chmod 700 "$HOMEB" && cp "$k" "$HOMEB/telegram-app.json" && chmod 600 "$HOMEB/telegram-app.json" \
+      && echo "Ключи приложения Telegram взяты из $k"
+  else
+    echo "Файл $k не похож на ключи Telegram, пропускаю."
+  fi
+done
 case "$ROOT" in "$HOME/Library/Mobile Documents"*|"$HOME/Documents"*|"$HOME/Desktop"*|"$HOME/Downloads"*)
   step "Переношу Огонька в вашу домашнюю папку (~/Огонёк), чтобы macOS не мешала ему работать"
   DEST="$HOME/Огонёк"
