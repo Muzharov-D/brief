@@ -554,6 +554,74 @@ print(json.dumps([r, n1, n2]))
         self.assertEqual(busy[1], "")
         self.assertEqual((n1, n2), (0, 1))  # подряд без пропуска молчим, пропуск: одно предупреждение в день
 
+    def _real_tg(self):
+        """Настоящий коннектор Telegram на окружении с telethon, данные и ключи во временной папке."""
+        venv = Path.home() / ".brief/venv"
+        if not (venv / "bin/python").exists():
+            self.skipTest("нет окружения с telethon")
+        (self.home / "venv").parent.mkdir(parents=True, exist_ok=True)
+        (self.home / "venv").symlink_to(venv)
+        self.brief("profile", "connectors", json.dumps({"fake": "fake", "tg": "telegram"}))
+        return self.home / "data/telegram"
+
+    def test_telegram_app_keys_order(self):
+        data = self._real_tg()
+        st = lambda: json.loads(self.brief("run", "tg", "status").stdout)
+        self.assertEqual((st()["keys"], st()["reading"], st()["bot"]), (None, False, False))
+        shared = self.home / "telegram-app.json"
+        shared.write_text(json.dumps({"api_id": 1234567, "api_hash": "0123456789abcdef0123456789ABCDEF"}))
+        shared.chmod(0o644)
+        self.assertEqual(st()["keys"], "shared")
+        self.assertEqual(oct(shared.stat().st_mode & 0o777), "0o600")  # общие ключи видит только владелец
+        data.mkdir(parents=True, exist_ok=True)
+        (data / "config.json").write_text(json.dumps({"api_id": 7654321, "api_hash": "f" * 32}))
+        self.assertEqual(st()["keys"], "own")  # свои ключи человека важнее общих
+        (data / "config.json").unlink()
+        shared.write_text(json.dumps({"api_id": 1234567, "api_hash": "short"}))
+        self.assertIsNone(st()["keys"])  # испорченный файл не ключи
+        out = self.brief("run", "tg", "status").stdout
+        self.assertNotIn("1234567", out)  # ключи наружу не выводятся
+
+    def test_telegram_reading_optional(self):
+        self._real_tg()
+        r = self.brief("run", "tg", "inbox", "1")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue(json.loads(r.stdout)["not_connected"])
+        doc = self.brief("doctor").stdout
+        self.assertIn("НЕТ  Telegram: бот  не подключён", doc)
+        self.assertIn("выкл  Telegram: чтение чатов  не подключено", doc)
+        # агент работает и знает, что чатов нет; агент только про чаты пропускается без модели
+        r = self.brief("agent", "тест", "force")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        prompt = json.dumps(Model.seen[0], ensure_ascii=False)
+        self.assertIn("Telegram: чтение чатов не подключено", prompt)
+        n = len(Model.seen)
+        (self.ws / "Агенты/каналы.md").write_text("---\ntitle: Каналы\nneeds: tg-read\n---\nдайджест\n", encoding="utf-8")
+        r = self.brief("agent", "каналы", "force")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(len(Model.seen), n)
+        self.assertIn("пропуск: чтение чатов Telegram не подключено",
+                      next((self.ws / "Журнал/каналы").glob("*.log")).read_text(encoding="utf-8"))
+
+    def test_bot_owner_by_start_code(self):
+        self._real_tg()
+        code = f"""
+import json, sys
+sys.argv = ["tg"]
+sys.path.insert(0, {str(self.repo / 'connectors/telegram')!r})
+import tg
+def msg(chat, user, text, kind="private"):
+    return {{"message": {{"chat": {{"id": chat, "type": kind}}, "from": {{"id": user}}, "text": text}}}}
+ups = [msg(1, 5, "/start чужой"), msg(3, 9, "/start K1", "group"), msg(2, 7, "/start K1")]
+tg.bot_call = lambda token, method, p: {{"ok": True, "result": ups}}
+print(json.dumps([tg.start_chat("T", "K1", None, 1), tg.start_chat("T", "K1", 7, 1),
+                  tg.start_chat("T", "K1", 8, 1), tg.start_chat("T", "K2", None, 1)]))
+"""
+        out = subprocess.run([str(self.home / "venv/bin/python"), "-I", "-c", code], capture_output=True, text=True,
+                             env=dict(self.env, BRIEF_TG_DATA=str(self.tmp / "tg")), timeout=60)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertEqual(json.loads(out.stdout.strip().splitlines()[-1]), [2, 2, None, None])
+
     def test_wizard_token(self):
         import socket, time, urllib.request, urllib.error
         sock = socket.socket(); sock.bind(("127.0.0.1", 0)); port = sock.getsockname()[1]; sock.close()

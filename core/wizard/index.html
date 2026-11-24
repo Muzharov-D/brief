@@ -270,6 +270,8 @@ function say(html, extra) {
   const L = document.getElementById("alog"); L.appendChild(el); L.scrollTop = L.scrollHeight; return el;
 }
 function me(text) { log.push(`<div class="a-me a-old">${esc(text)}</div>`); }
+// ответ человека сразу в разговор, без перехода к следующему шагу (подключение чатов идёт внутри шага)
+function meNow(text) { remember(); me(text); const L = document.getElementById("alog"); L.appendChild($(log[log.length - 1])); L.scrollTop = L.scrollHeight; }
 // в истории оставляем только реплики помощника: формы и списки отвечены ответом пользователя
 function remember() {
   document.querySelectorAll("#alog .a-row:not(.a-old)").forEach(r => {
@@ -458,37 +460,69 @@ function stTasks() {
   }));
 }
 
+// Шаг Telegram при настройке: только свой бот, через него приходят брифинги. Чтение чатов по желанию,
+// после первого пробного брифинга (кнопка «Подключить чаты Telegram»), чтобы вход в аккаунт не держал настройку.
 async function stTelegram() {
   if (!conns().telegram) return next("Telegram недоступен");
-  say(nb("Telegram: замечаю вопросы и договорённости в рабочих чатах и присылаю вам брифинги через вашего личного бота."), canCannot("telegram"));
+  say(nb("Telegram: присылаю вам брифинги и принимаю голосовые через вашего личного бота. Читать ваши рабочие чаты могу тоже, но это по желанию и потом, после первого пробного брифинга."), canCannot("telegram"));
   if (!isOn("telegram")) {
-    input(button("Подключить Telegram", "", async () => { await setConn("telegram", true); renderTalk(); }), button("Без Telegram", "ghost", () => next("Без Telegram")));
+    input(button("Подключить бота", "", async () => { await setConn("telegram", true); renderTalk(); }), button("Без Telegram", "ghost", () => next("Без Telegram")));
     return;
   }
   const st = S.telegram = await call("tg", {action: "status"});
+  if (st.bot) {
+    say(nb(`Бот ${st.bot_name ? "@" + st.bot_name : ""} подключён: брифинги будут приходить в него.`));
+    input(button("Дальше", "", () => next(`Бот ${st.bot_name ? "@" + st.bot_name : "подключён"}`)), button("Подключить другого бота", "ghost", () => botStep()));
+    return;
+  }
+  botStep();
+}
+function botStep() {
+  say(nb("Нужен ваш личный бот, это 2 минуты. В Telegram откройте @BotFather, отправьте /newbot, задайте название и адрес на …bot и скопируйте токен из ответа. Потом нажмите «Подключить бота» и вставьте токен в окно. Бот откроется в Telegram: нажмите в нём «Start»."));
+  input(button("Подключить бота", "", async (e) => {
+    e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span>Жду токен';
+    const r = await waitJob((await call("tg", {action: "bot-setup"})).started);
+    e.target.disabled = false; e.target.textContent = "Подключить бота";
+    if (r.error) { say(`<span class="bad">${nb(r.error)}</span>`); return; }
+    if (!r.ok) { say(`<span class="bad">${nb(r.text || "Бот не подключился. Попробуйте ещё раз.")}</span>`); return; }
+    S.telegram = await call("tg", {action: "status"});
+    next(`Бот @${r.bot || ""}`);
+  }), button("Без Telegram", "ghost", async () => { await setConn("telegram", false); next("Без Telegram"); }));
+}
+
+// Чтение чатов Telegram: вход по QR-коду и выбор папок. Работает внутри любого разговора (после пробного брифинга,
+// из «Доступов»); done(true) когда чаты подключены, done(false) если человек отложил.
+async function tgReadSteps(done) {
+  const st = S.telegram = await call("tg", {action: "status"});
   if (!st.session) {
-    say(nb("Сначала вход. Понадобятся ключи: откройте my.telegram.org, войдите по номеру, раздел API development tools, заполните форму: App title и Short name любые латиницей от 5 букв, например ogonyok (слово Telegram нельзя), URL и Description оставьте пустыми, Platform: Desktop, нажмите Create app. Затем нажмите «Войти»: появятся окна для двух ключей и QR-код, отсканируйте его телефоном (Telegram, Настройки, Устройства)."));
+    if (st.keys) {
+      say(nb("Подключу чтение ваших чатов. Нажмите «Войти»: в Safari откроется QR-код. На телефоне откройте Telegram, Настройки, Устройства, «Подключить устройство» и наведите камеру на код. Если у вас включён облачный пароль, спрошу его в отдельном окне. После входа вы сами выберете папки, которые мне можно видеть. Я подключаюсь через официальный Telegram API как отдельное приложение: в Telegram, в разделе Устройства, появится этот компьютер, и там же вход можно в любой момент завершить."));
+    } else {
+      say(nb("Для входа нужны ключи приложения Telegram. Откройте my.telegram.org, войдите по номеру, раздел API development tools, заполните форму: App title и Short name любые латиницей от 5 букв, например ogonyok (слово Telegram нельзя), URL и Description оставьте пустыми, Platform: Desktop, нажмите Create app. Затем нажмите «Войти»: появятся окна для двух ключей и QR-код, отсканируйте его телефоном (Telegram, Настройки, Устройства)."));
+    }
     input(button("Войти", "", async (e) => {
       e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span>Жду вход';
       const r = await waitJob((await call("tg", {action: "gui-login"})).started);
       if (r.error) say(`<span class="bad">${nb(r.error)}</span>`);
-      renderTalk();
-    }), button("Без Telegram", "ghost", async () => { await setConn("telegram", false); next("Без Telegram"); }));
+      meNow("Вход");
+      tgReadSteps(done);
+    }), button("Не сейчас", "ghost", () => { meNow("Не сейчас"); done(false); }));
     return;
   }
   const holder = say(nb("Вход выполнен. Загружаю ваши папки…"));
   const f = await call("tg", {action: "folders"});
   if (f.error || !(f.folders || []).length) {
     holder.querySelector(".a-b").innerHTML = nb(f.error || "В Telegram пока нет папок. Создайте папку с рабочими чатами (Настройки, Папки с чатами) и нажмите «Обновить».");
-    input(button("Обновить", "", () => renderTalk())); return;
+    input(button("Обновить", "", () => { holder.remove(); tgReadSteps(done); }), button("Не сейчас", "ghost", () => done(false))); return;
   }
   holder.remove();
   const sel = new Set(f.selected.length ? f.selected : []);
   const list = $(`<div class="a-fl"></div>`);
   const plural = (n) => n % 10 === 1 && n % 100 !== 11 ? "чат" : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "чата" : "чатов";
+  const label = () => sel.size ? `Сохранить ${sel.size} ${sel.size === 1 ? "папку" : sel.size < 5 ? "папки" : "папок"}` : "Отметьте папки";
   const paint = () => {
     list.innerHTML = "";
-    f.folders.forEach(x => { const b = $(`<button class="a-f"><span class="chk ${sel.has(x.title) ? "on" : ""}"></span>${esc(x.title)}<span class="n">${x.chats} ${plural(x.chats)}${x.categories.length ? " + " + esc(x.categories.join(", ")) : ""}</span></button>`); b.onclick = () => { sel.has(x.title) ? sel.delete(x.title) : sel.add(x.title); paint(); saveBtn.innerHTML = `Сохранить ${sel.size} ${sel.size === 1 ? "папку" : sel.size < 5 ? "папки" : "папок"}`; saveBtn.disabled = !sel.size; }; list.appendChild(b); });
+    f.folders.forEach(x => { const b = $(`<button class="a-f"><span class="chk ${sel.has(x.title) ? "on" : ""}"></span>${esc(x.title)}<span class="n">${x.chats} ${plural(x.chats)}${x.categories.length ? " + " + esc(x.categories.join(", ")) : ""}</span></button>`); b.onclick = () => { sel.has(x.title) ? sel.delete(x.title) : sel.add(x.title); paint(); saveBtn.innerHTML = label(); saveBtn.disabled = !sel.size; }; list.appendChild(b); });
   };
   const why = $(`<div class="a-why"><b>${nb("Что я буду делать с этими чатами:")}</b> ${nb("замечать вопросы, на которые вы не ответили, и договорённости. Читаю только то, что вы уже прочитали сами. Писать от вашего имени не могу: ответ приходит вам ссылкой, отправляете вы.")}</div>`);
   const wrap = $(`<div></div>`); wrap.append(list, why);
@@ -496,23 +530,26 @@ async function stTelegram() {
   const saveBtn = button("Сохранить", "", async () => {
     const r = await call("tg", {action: "save_folders", folders: [...sel]});
     if (r.error) { say(`<span class="bad">${nb(r.error)}</span>`); return; }
-    if (!st.bot) return botStep([...sel]);
-    next(`Папки: ${[...sel].join(", ")}`);
+    S.telegram = await call("tg", {action: "status"});
+    meNow(`Папки: ${[...sel].join(", ")}`);
+    done(true);
   });
-  paint(); saveBtn.textContent = sel.size ? `Сохранить ${sel.size} ${sel.size === 1 ? "папку" : sel.size < 5 ? "папки" : "папок"}` : "Отметьте папки"; saveBtn.disabled = !sel.size;
-  input(saveBtn, button("Обновить список", "ghost", () => renderTalk()), $(`<span class="q">${nb("Нужной папки нет? Создайте её в Telegram и нажмите «Обновить список».")}</span>`));
+  paint(); saveBtn.textContent = label(); saveBtn.disabled = !sel.size;
+  input(saveBtn, button("Обновить список", "ghost", () => tgReadSteps(done)), $(`<span class="q">${nb("Нужной папки нет? Создайте её в Telegram и нажмите «Обновить список».")}</span>`));
 }
-function botStep(folders) {
-  remember(); me(`Папки: ${folders.join(", ")}`);
-  say(nb("Последнее для Telegram: ваш личный бот, через него я пишу вам и принимаю голосовые. В Telegram откройте @BotFather, отправьте /newbot, задайте название и адрес на …bot и скопируйте токен из ответа. Потом нажмите «Подключить бота» и вставьте токен в окно."));
-  input(button("Подключить бота", "", async (e) => {
-    e.target.disabled = true; e.target.innerHTML = '<span class="spin"></span>Жду токен';
-    const r = await waitJob((await call("tg", {action: "bot-setup"})).started);
-    e.target.disabled = false; e.target.textContent = "Подключить бота";
-    if (r.error) { say(`<span class="bad">${nb(r.error)}</span>`); return; }
-    next("Бот подключён");
-  }), button("Позже", "ghost", () => next("Бот позже")));
+// Отдельная страница для подключения чатов (из «Доступов»): тот же разговор, без шагов настройки
+function renderTgRead(back) {
+  view = "tgread"; tabs();
+  const m = document.getElementById("main"); m.innerHTML = "";
+  m.appendChild($(`<div class="a-chat"><div class="a-log" id="alog"></div><div class="a-in" id="ain"></div></div>`));
+  log = [];
+  tgReadSteps((ok) => {
+    if (!ok) return go(back);
+    say(`<span class="ok">${nb("Чаты Telegram подключены. В следующем брифинге будут вопросы и договорённости из выбранных папок.")}</span>`);
+    input(button("Вернуться", "", () => go(back)));
+  });
 }
+const tgReadOffer = () => isOn("telegram") && !(S.telegram || {}).reading;
 
 function stCalls() {
   const ids = ["calls-anarlog", "voice-whisper"].filter(i => conns()[i]);
@@ -598,7 +635,7 @@ async function stCheck() {
   h.querySelector(".a-b").innerHTML = "";
   const rows = String(d.text || "").split("\n").filter(Boolean);
   const list = $(`<div class="doc"></div>`);
-  rows.forEach(r => list.appendChild($(`<div class="${r.startsWith("ок") ? "ok" : r.startsWith("НЕТ") ? "bad" : "muted"}">${esc(r.replace(/^ок\s+/, "✓ ").replace(/^НЕТ\s+/, "✗ "))}</div>`)));
+  rows.forEach(r => list.appendChild($(`<div class="${r.startsWith("ок") ? "ok" : r.startsWith("НЕТ") ? "bad" : "muted"}">${esc(r.replace(/^ок\s+/, "✓ ").replace(/^НЕТ\s+/, "✗ ").replace(/^выкл\s+/, "○ "))}</div>`)));
   h.querySelector(".a-b").append($(`<div>${nb("Вот что получилось:")}</div>`), list);
   const mb = S.agents.find(a => a.id === "morning-briefing");
   const finish = () => { say(nb("Остальных агентов включайте по одному во вкладке «Расписание»: у каждого там есть пробный прогон.")); input(button("Открыть «Расписание»", "", () => go("schedule")), button("Открыть «Доступы»", "ghost", () => go("access"))); };
@@ -615,8 +652,16 @@ async function stCheck() {
     const w = say('<span class="spin"></span>' + nb("Собираю брифинг по-настоящему, но ничего не отправляю и не меняю: письма, задачи и Telegram остаются как были. Это 2-5 минут."));
     const r = await trialRun("morning-briefing", s => { w.querySelector(".a-b").innerHTML = '<span class="spin"></span>' + nb(`Собираю пробный брифинг, ничего не отправляю. Прошло ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}.`); });
     w.querySelector(".a-b").innerHTML = ""; w.querySelector(".a-b").appendChild(reportView(r));
+    const tgBtn = () => button("Подключить чаты Telegram", "ghost", () => {
+      meNow("Подключить чаты Telegram");
+      tgReadSteps(async (ok) => {
+        say(ok ? `<span class="ok">${nb("Чаты подключены. Можно собрать пробный брифинг ещё раз, уже с ними.")}</span>` : nb("Хорошо, чаты можно подключить позже во вкладке «Доступы». Включить утренний брифинг по расписанию?"));
+        input(...(ok ? [button("Пробный брифинг ещё раз", "", () => renderTalk())] : []), enable(), later());
+      });
+    });
+    if (r && r.ok && tgReadOffer()) say(nb("Сейчас в брифинге нет ваших чатов Telegram: их чтение не подключено. Если хотите, чтобы я замечал вопросы и договорённости из рабочих чатов, подключите их. Это вход по QR-коду с телефона и выбор папок, около двух минут. Можно и позже, во вкладке «Доступы»."));
     say(nb(r && r.ok ? "Так будет выглядеть утренний брифинг. Включить его по расписанию?" : "Пробный прогон не получился. Можно проверить настройки и попробовать снова."));
-    input(...(r && r.ok ? [enable(), later()] : [button("Проверить снова", "", () => renderTalk()), later()]));
+    input(...(r && r.ok ? [enable(), later(), ...(tgReadOffer() ? [tgBtn()] : [])] : [button("Проверить снова", "", () => renderTalk()), later()]));
   }), button("Проверить снова", "ghost", () => renderTalk()));
 }
 
@@ -644,7 +689,14 @@ async function renderAccess() {
       <div class="b-cols"><div><div class="lbl">МОЖЕТ</div>${c.can.map(x => `<div class="li">${nb(x)}</div>`).join("")}</div><div><div class="lbl">НЕ МОЖЕТ</div>${c.cannot.map(x => `<div class="li no">${nb(x)}</div>`).join("")}</div></div></div>`);
     card.querySelector(".sw").onclick = async () => { await setConn("telegram", !on); if (!on) { step = 4; log = []; return renderTalk(); } renderAccess(); };
     grid.appendChild(card);
-    if (on) loadChips(card.querySelector("#chips"), side);
+    const tgs = S.telegram || {};
+    if (on && !tgs.reading) {  // только бот: чтение чатов подключается отдельно и по желанию
+      const chips = card.querySelector("#chips"); chips.innerHTML = "";
+      card.querySelector("#chips").previousElementSibling.textContent = "ЧТЕНИЕ ЧАТОВ";
+      chips.append($(`<span class="note">${nb((tgs.bot ? `Брифинги приходят в бота${tgs.bot_name ? " @" + tgs.bot_name : ""}. ` : "Бот ещё не подключён. ") + "Чаты не читаю: их чтение не подключено.")}</span>`),
+        button("Подключить чаты Telegram", "", () => go("tgread")));
+      if (!tgs.bot) chips.appendChild(button("Подключить бота", "ghost", () => { step = 4; log = []; renderTalk(); }));
+    } else if (on) loadChips(card.querySelector("#chips"), side);
   }
   grid.appendChild(mc);  // модель справа от крупной карточки Telegram
   // остальные коннекторы
@@ -683,11 +735,12 @@ async function loadChips(el, side) {
 function paintSide(side, folders) {
   const on = Object.keys(conns()).filter(isOn), off = Object.keys(conns()).filter(id => !isOn(id));
   const seen = on.filter(id => id !== "telegram").map(id => conns()[id].title);
-  if (on.includes("telegram")) seen.push(`<b>${folders.length} ${folders.length === 1 ? "папку" : folders.length < 5 ? "папки" : "папок"} Telegram</b>: ${folders.map(esc).join(", ")}`);
+  const reading = on.includes("telegram") && (S.telegram || {}).reading;
+  if (reading) seen.push(`<b>${folders.length} ${folders.length === 1 ? "папку" : folders.length < 5 ? "папки" : "папок"} Telegram</b>: ${folders.map(esc).join(", ")}`);
   side.innerHTML = "";
   side.append($(`<div class="hd"><img class="av" src="/ogonyok.svg" alt="">${nb("Что увидит " + name())}</div>`),
     $(`<div class="s">ВИДИТ</div>`), $(`<div class="r">${seen.length ? seen.map(x => x.startsWith("<b>") ? x : nb(x)).join(". ") + "." : nb("Пока ничего не подключено.")}</div>`),
-    $(`<div class="s">НЕ ВИДИТ</div>`), $(`<div class="r x">${nb((on.includes("telegram") ? "Чаты вне выбранных папок. Непрочитанные вами сообщения. " : "Telegram. ") + (off.filter(i => i !== "telegram").length ? off.filter(i => i !== "telegram").map(i => conns()[i].title).join(", ") + " (выключено)." : ""))}</div>`),
+    $(`<div class="s">НЕ ВИДИТ</div>`), $(`<div class="r x">${nb((reading ? "Чаты вне выбранных папок. Непрочитанные вами сообщения. " : on.includes("telegram") ? "Ваши чаты Telegram: их чтение не подключено. " : "Telegram. ") + (off.filter(i => i !== "telegram").length ? off.filter(i => i !== "telegram").map(i => conns()[i].title).join(", ") + " (выключено)." : ""))}</div>`),
     $(`<div class="s">КУДА УХОДЯТ ДАННЫЕ</div>`), $(`<div class="r">${where().text}${P().fallback_runtime ? " " + nb("Если основная модель не ответит, текст") + " " + where(P().fallback_runtime).to + "." : ""}</div>`),
     $(`<div class="s">ЧТО ОТПРАВЛЯЕТ</div>`), $(`<div class="r">${nb("Только сообщения вам в ваш бот. Остальное черновики и ссылки: отправляете вы.")}</div>`));
   const foot = $(`<div class="foot"></div>`);
@@ -831,7 +884,7 @@ function go(v) { location.hash = v; }
 function route() {
   const v = location.hash.slice(1) || (P().setup_done ? "home" : "talk");
   if (!P().setup_done && v !== "talk") return renderTalk();
-  ({home: () => renderHome(false), talk: () => { step = P().setup_done ? 0 : (P().setup_step || 0); log = []; renderTalk(); }, access: renderAccess, schedule: renderSchedule, audit: renderAudit, check: renderCheck}[v] || (() => renderHome(false)))();
+  ({home: () => renderHome(false), talk: () => { step = P().setup_done ? 0 : (P().setup_step || 0); log = []; renderTalk(); }, access: renderAccess, tgread: () => renderTgRead("access"), schedule: renderSchedule, audit: renderAudit, check: renderCheck}[v] || (() => renderHome(false)))();
 }
 document.querySelectorAll(".tab").forEach(t => t.onclick = () => { if (location.hash.slice(1) === t.dataset.view) route(); else go(t.dataset.view); });
 window.onhashchange = route;
