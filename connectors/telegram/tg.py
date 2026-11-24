@@ -236,9 +236,29 @@ async def login():
     print(f"Готово, вход выполнен как {name_of(me)}. Окно можно закрыть.")
 
 
+WINDOWS = os.name == "nt"
+
+
+def _tk():
+    import tkinter as tk
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    return root
+
+
 def dialog(text, hidden=False, default=""):
-    """Окно ввода macOS. Значение уходит прямо в скрипт и нигде не печатается."""
+    """Окно ввода (macOS или Windows). Значение уходит прямо в скрипт и нигде не печатается."""
     import subprocess
+    if WINDOWS:
+        from tkinter import simpledialog
+        root = _tk()
+        value = simpledialog.askstring("Огонёк: вход в Telegram", text, parent=root, show="*" if hidden else None,
+                                       initialvalue=default)
+        root.destroy()
+        if value is None:
+            raise KeyboardInterrupt
+        return value.strip()
     script = (f'display dialog {json.dumps(text, ensure_ascii=False)} default answer {json.dumps(default, ensure_ascii=False)}'
               f'{" with hidden answer" if hidden else ""} with title "Брифинг: вход в Telegram"'
               ' buttons {"Отмена", "OK"} default button "OK"')
@@ -250,8 +270,62 @@ def dialog(text, hidden=False, default=""):
 
 def notify(text):
     import subprocess
+    if WINDOWS:
+        from tkinter import messagebox
+        root = _tk()
+        messagebox.showinfo("Огонёк: вход в Telegram", text, parent=root)
+        root.destroy()
+        return
     subprocess.run(["osascript", "-e", f'display dialog {json.dumps(text, ensure_ascii=False)} with title "Брифинг: вход в Telegram"'
                     ' buttons {"OK"} default button "OK"'], capture_output=True)
+
+
+def show_qr(f):
+    """QR-код для входа: на Mac в Safari, как было, на Windows в браузере по умолчанию."""
+    import subprocess
+    if WINDOWS:
+        import webbrowser
+        webbrowser.open(f.as_uri())
+    else:
+        subprocess.run(["open", "-a", "Safari", str(f)])
+
+
+def pick_many(titles, current):
+    """Выбор нескольких папок: окно macOS или Windows. Пустой список, если отменили."""
+    import subprocess
+    if WINDOWS:
+        import tkinter as tk
+        root = tk.Tk()
+        root.title("Огонёк: доступ к Telegram")
+        root.attributes("-topmost", True)
+        tk.Label(root, text="Какие папки Telegram могут читать агенты?\nОстальные чаты им будут не видны совсем.",
+                 justify="left").pack(padx=16, pady=(14, 6), anchor="w")
+        lb = tk.Listbox(root, selectmode="multiple", height=min(len(titles), 14), width=48, exportselection=False)
+        for i, t in enumerate(titles):
+            lb.insert("end", t)
+            if t in current:
+                lb.selection_set(i)
+        lb.pack(padx=16, pady=6, fill="both", expand=True)
+        res = []
+
+        def save():
+            res.extend(titles[i] for i in lb.curselection())
+            root.destroy()
+        row = tk.Frame(root)
+        row.pack(padx=16, pady=(6, 14), anchor="e")
+        tk.Button(row, text="Отмена", command=root.destroy).pack(side="right", padx=(8, 0))
+        tk.Button(row, text="Сохранить", command=save, default="active").pack(side="right")
+        root.mainloop()
+        return res
+    items = "{" + ", ".join(json.dumps(t, ensure_ascii=False) for t in titles) + "}"
+    chosen = "{" + ", ".join(json.dumps(t, ensure_ascii=False) for t in current if t in titles) + "}"
+    script = (f"set r to choose from list {items} default items {chosen} with multiple selections allowed "
+              'with title "Брифинг: доступ к Telegram" with prompt "Какие папки Telegram могут читать агенты? '
+              'Остальные чаты им будут не видны совсем." OK button name "Сохранить" cancel button name "Отмена"\n'
+              'if r is false then return ""\n'
+              "set AppleScript's text item delimiters to linefeed\nreturn r as text")
+    r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+    return [x for x in r.stdout.splitlines() if x.strip()]
 
 
 async def gui_login():
@@ -287,7 +361,7 @@ async def gui_login():
             for attempt in range(5):
                 qr = await c.qr_login()
                 qrcode.make(qr.url, image_factory=qrcode.image.svg.SvgPathFillImage, box_size=20).save(str(qr_file))
-                subprocess.run(["open", "-a", "Safari", str(qr_file)])
+                show_qr(qr_file)
                 print("QR показан, жду сканирования")
                 try:
                     await qr.wait(timeout=110)
@@ -306,7 +380,7 @@ async def gui_login():
     for p in DATA.glob("briefing.session*"):
         p.chmod(0o600)
     print(f"вход выполнен: {name_of(me)}")
-    notify(f"Готово, вход выполнен как {name_of(me)}. Вкладку с QR-кодом в Safari можно закрыть.")
+    notify(f"Готово, вход выполнен как {name_of(me)}. Вкладку с QR-кодом в браузере можно закрыть.")
 
 
 async def access_setup():
@@ -328,15 +402,7 @@ async def access_setup():
                "(Настройки, Папки с чатами), и запусти выбор снова.")
         sys.exit(json.dumps({"error": "нет папок Telegram"}, ensure_ascii=False))
     current = json.loads(ACCESS.read_text(encoding="utf-8")).get("folders", []) if ACCESS.exists() else []
-    items = "{" + ", ".join(json.dumps(t, ensure_ascii=False) for t in titles) + "}"
-    chosen = "{" + ", ".join(json.dumps(t, ensure_ascii=False) for t in current if t in titles) + "}"
-    script = (f"set r to choose from list {items} default items {chosen} with multiple selections allowed "
-              'with title "Брифинг: доступ к Telegram" with prompt "Какие папки Telegram могут читать агенты? '
-              'Остальные чаты им будут не видны совсем." OK button name "Сохранить" cancel button name "Отмена"\n'
-              'if r is false then return ""\n'
-              "set AppleScript's text item delimiters to linefeed\nreturn r as text")
-    r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-    picked = [x for x in r.stdout.splitlines() if x.strip()]
+    picked = pick_many(titles, current)
     if not picked:
         sys.exit(json.dumps({"error": "папки не выбраны, доступ не изменён"}, ensure_ascii=False))
     DATA.mkdir(mode=0o700, parents=True, exist_ok=True)

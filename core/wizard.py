@@ -14,6 +14,7 @@ import shlex
 import subprocess
 import sys
 import threading
+import time
 import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -26,6 +27,8 @@ import brief  # noqa: E402
 PAGE = CORE / "wizard"
 BRIEF = [sys.executable, "-I", str(CORE / "brief.py")]  # без bash: так же работает и на Windows
 TOKEN = os.environ.get("BRIEF_WIZARD_TOKEN") or secrets.token_urlsafe(18)
+IDLE = 20 * 60  # мастер без окна (Windows, ярлык) закрывается сам, когда страницу закрыли: она шлёт ping раз в минуту
+LAST = [time.monotonic()]
 JOBS = {}
 
 
@@ -60,10 +63,10 @@ def local_models():
 
 
 def codex_status():
-    r = subprocess.run([str(CORE / "codex-path")], capture_output=True, text=True)
-    if r.returncode:
+    codex = brief.codex_bin()
+    if not codex:
         return {"found": False}
-    ok = subprocess.run([r.stdout.strip(), "login", "status"], capture_output=True).returncode == 0
+    ok = subprocess.run([codex, "login", "status"], capture_output=True).returncode == 0
     return {"found": True, "logged_in": ok}
 
 
@@ -123,7 +126,31 @@ def start_job(key, args, timeout=900):
     return {"started": key}
 
 
+def claude_login_windows():
+    """Окно командной строки: при нужде ставит Claude Code с claude.ai, потом вход в браузере."""
+    st = brief.claude_status()
+    f = brief.HOME / "state" / "Войти в Claude.cmd"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    exe = st["path"] if st.get("found") else str(Path.home() / ".local" / "bin" / "claude.exe")
+    install = "" if st.get("found") else (
+        "echo Ставлю Claude Code с сайта claude.ai (около минуты)...\r\n"
+        'powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://claude.ai/install.ps1 | iex"\r\n')
+    git = "" if brief.git_bash() else (
+        "echo Ставлю Git: Claude Code на Windows работает через него...\r\n"
+        "winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements\r\n")
+    f.write_text("@echo off\r\nchcp 65001 >nul\r\ncls\r\n"
+                 "echo Вход в Claude для помощника. Откроется браузер: войдите тем же аккаунтом, что и в чате Claude.\r\n"
+                 "echo Нужна подписка Pro или Max: на бесплатном тарифе помощник работать не сможет.\r\necho.\r\n"
+                 + git + install + f'"{exe}" auth login --claudeai\r\n'
+                 "echo.\r\necho Готово. Вернитесь в окно настройки и нажмите «Проверить и дальше». Это окно можно закрыть.\r\npause\r\n",
+                 encoding="utf-8")
+    os.startfile(str(f))  # noqa: S606  своё окно, чтобы человек видел, что происходит
+    return {"started": True}
+
+
 def api(name, body):
+    if name == "ping":
+        return {"ok": True}
     if name == "state":
         return state()
     if name == "save":
@@ -149,6 +176,8 @@ def api(name, body):
         import harness
         ok, detail = harness.ping(rt)
         return {"ok": ok, "detail": detail}
+    if name == "claude_login" and brief.PLATFORM == "windows":
+        return claude_login_windows()
     if name == "claude_login":  # окно Терминала: при нужде ставит Claude Code с claude.ai, потом вход в браузере
         st = brief.claude_status()
         f = brief.HOME / "state" / "Войти в Claude.command"
@@ -169,9 +198,9 @@ def api(name, body):
     if name == "codex_login":
         st = codex_status()
         if not st.get("found"):
-            return {"error": "Codex не найден: обновите приложение ChatGPT"}
-        path = subprocess.run([str(CORE / "codex-path")], capture_output=True, text=True).stdout.strip()
-        subprocess.Popen([path, "login"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return {"error": "Codex не найден: обновите приложение ChatGPT" if brief.PLATFORM == "mac"
+                    else "Codex не найден: поставьте приложение Codex от OpenAI и запустите настройку снова"}
+        subprocess.Popen([brief.codex_bin(), "login"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return {"started": True}
     if name == "tg":  # действия Telegram при настройке: вход, папки, бот
         action = body.get("action")
@@ -190,7 +219,7 @@ def api(name, body):
     if name == "doctor":
         return sh(["doctor"], 600)
     if name == "schedule":
-        return sh(["schedule", "install"], 120) if brief.PLATFORM == "mac" else {"text": "расписание Windows ставится установщиком"}
+        return sh(["schedule", "install"], 120)
     if name == "trial":  # пробный прогон: ничего не отправляет и не меняет, результат в отчёте
         agent = body.get("agent", "morning-briefing")
         return start_job("trial-" + agent, ["agent", agent, "dry"], 2400)
@@ -204,8 +233,6 @@ def api(name, body):
         conf = dict((p.get("agents") or {}).get(agent, {}))
         conf.update({k: body[k] for k in ("on", "schedule") if k in body})
         merge({"agents": {agent: conf}})
-        if brief.PLATFORM != "mac":
-            return {"text": "расписание Windows ставится установщиком"}
         return sh(["schedule", "install"], 120)
     if name == "audit":
         return sh(["audit", str(int(body.get("days", 1)))], 30)
@@ -213,7 +240,7 @@ def api(name, body):
         return start_job("bg-access", ["access"], 420)
     if name == "feed":  # главная после настройки: то, что ушло в Telegram, и состояние агентов
         return {"items": brief.feed(int(body.get("days", 7))), "agents": brief.agent_status(),
-                "schedule": brief.PLATFORM == "mac" and brief.schedule_owner() is not None and brief.schedule_mine()}
+                "schedule": brief.schedule_owner() is not None and brief.schedule_mine()}
     return {"error": f"нет такого действия: {name}"}
 
 
@@ -233,6 +260,7 @@ class H(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
+        LAST[0] = time.monotonic()
         path = self.path.split("?")[0]
         files = {"/": ("index.html", "text/html; charset=utf-8"), "/ogonyok.svg": ("ogonyok.svg", "image/svg+xml")}
         if path not in files:
@@ -243,6 +271,7 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.headers.get("X-Brief-Token") != TOKEN or not self.path.startswith("/api/"):
             return self._send(403, {"error": "нет доступа"})
+        LAST[0] = time.monotonic()
         try:
             n = int(self.headers.get("Content-Length") or 0)
             body = json.loads(self.rfile.read(n) or b"{}")
@@ -258,6 +287,12 @@ def main(argv):
     print(f"Мастер настройки открыт: {url}\nЗакройте это окно, когда закончите.", flush=True)
     if "--no-open" not in argv:
         webbrowser.open(url)
+
+    def watch():
+        while time.monotonic() - LAST[0] < IDLE:
+            time.sleep(30)
+        srv.shutdown()
+    threading.Thread(target=watch, daemon=True).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

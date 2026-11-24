@@ -197,6 +197,7 @@ async function call(name, body = {}) {
   if (r.status === 403) throw new Error("Страница открыта без ключа. Запустите настройку заново.");
   return d;
 }
+setInterval(() => call("ping").catch(() => {}), 60000);  // пока страница открыта, мастер не закрывается сам
 async function load() { S = await call("state"); document.getElementById("brandName").textContent = name(); return S; }
 const P = () => S.profile;
 const name = () => P().assistant_name || "Огонёк";
@@ -405,7 +406,7 @@ function stMail() {
     for (const id of ids) await setConn(id, on[id]);
     if (mac && on["apple-mail"] && !(await bgAccess(e.target))) return;
     next(ids.filter(i => on[i]).map(i => conns()[i].title).join(", ") || "Не подключать");
-  }), $(`<span class="q">${nb("macOS спросит разрешение при первом обращении: нажмите «Разрешить».")}</span>`));
+  }), $(`<span class="q">${nb(mac ? "macOS спросит разрешение при первом обращении: нажмите «Разрешить»." : "Outlook может спросить, давать ли доступ программе: нажмите «Разрешить».")}</span>`));
 }
 // По расписанию Огонёк работает от своего имени, и macOS спрашивает про Почту отдельно. Спрашиваем сейчас,
 // иначе окно появится в 8 утра, его никто не увидит и брифинг уйдёт без почты.
@@ -515,9 +516,10 @@ function botStep(folders) {
 }
 
 function stCalls() {
-  const ids = ["calls-anarlog", "voice-whisper"].filter(i => conns()[i]);
+  const ids = ["calls-anarlog", "calls-windows", "voice-whisper"].filter(i => conns()[i]);
   if (!ids.length) return next("Пропущено");
-  say(nb("Ещё две вещи, по желанию. Протоколы созвонов: записывает бесплатная программа Anarlog прямо на компьютере, я делаю из записи протокол, задачи и черновик письма. Голосовые: наговорите задачу моему боту, через 15 минут она станет задачей."));
+  const rec = S.platform === "windows" ? "перед встречей откройте ярлык «Запись созвона» на рабочем столе, запись и расшифровка идут прямо на компьютере" : "записывает бесплатная программа Anarlog прямо на компьютере";
+  say(nb(`Ещё две вещи, по желанию. Протоколы созвонов: ${rec}, я делаю из записи протокол, задачи и черновик письма. Голосовые: наговорите задачу моему боту, через 15 минут она станет задачей.`));
   ids.forEach(id => say(`<b>${nb(conns()[id].title)}</b>`, canCannot(id)));
   const on = {}; ids.forEach(id => on[id] = isOn(id) || (!P().calls_asked && id === "voice-whisper" && isOn("telegram")));
   const list = $(`<div class="a-fl"></div>`);

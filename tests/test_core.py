@@ -583,5 +583,82 @@ print(json.dumps([r, n1, n2]))
             pr.terminate(); pr.wait()
 
 
+class WindowsPortTest(unittest.TestCase):
+    """Части переноса на Windows, которые проверяются на любой системе. Настоящий прогон только на Windows."""
+
+    def setUp(self):
+        sys.path.insert(0, str(REPO / "core"))
+
+    def test_claude_area(self):
+        import brief
+        self.assertEqual(brief.area_of("C:/Users/Полина/Brief"), "//c/Users/Полина/Brief/**")
+        self.assertEqual(brief.area_of("/Users/x/Brief"), "//Users/x/Brief/**")
+
+    def test_which_first_glob(self):
+        import brief
+        with tempfile.TemporaryDirectory() as d:
+            for v in ("1.0", "2.0"):
+                exe = Path(d) / f"app-{v}" / "claude"
+                exe.parent.mkdir()
+                exe.write_text("#!/bin/sh\n")
+                exe.chmod(0o755)
+                os.utime(exe, (1000 if v == "1.0" else 2000,) * 2)
+            self.assertEqual(brief.which_first(["нет-такой-программы"], [Path(d) / "app-*" / "claude"]),
+                             str(Path(d) / "app-2.0" / "claude"))
+            self.assertEqual(brief.which_first(["нет-такой-программы"], [Path(d) / "нет"]), "")
+
+    def test_task_xml(self):
+        """Задание Планировщика: раз в минуту tick без окна, путь с кириллицей и амперсандом не ломает XML."""
+        import xml.dom.minidom
+        import schedule
+        x = schedule.task_xml(r"C:\Users\Полина\.brief\venv\Scripts\pythonw.exe",
+                              r"C:\Users\Полина\R&D\Огонёк\core\brief.py", "PC\\Полина")
+        doc = xml.dom.minidom.parseString(x.replace('encoding="UTF-16"', ""))
+        self.assertEqual(doc.getElementsByTagName("Interval")[0].firstChild.data, "PT1M")
+        self.assertEqual(doc.getElementsByTagName("LogonType")[0].firstChild.data, "InteractiveToken")
+        self.assertTrue(doc.getElementsByTagName("Command")[0].firstChild.data.endswith("pythonw.exe"))
+        self.assertEqual(doc.getElementsByTagName("Arguments")[0].firstChild.data,
+                         r'-I "C:\Users\Полина\R&D\Огонёк\core\brief.py" tick')
+
+    def test_calls_windows(self):
+        """Записи окна «Запись созвона» в том же виде, что у Anarlog; короткие и разобранные пропускаются."""
+        body = "\n".join(f"[00:{i:02d}] {'Я' if i % 2 else 'Собеседник'}: обсуждаем сроки поставки номер {i}"
+                         for i in range(20))
+        with tempfile.TemporaryDirectory() as d:
+            ws = Path(d)
+            (ws / "Записи").mkdir()
+            (ws / "Созвоны").mkdir()
+            (ws / "Записи/2026-11-24 10-00 Поставка.txt").write_text(
+                "Тема: Поставка\nНачало: 2026-11-24 10:00\nКонец: 2026-11-24 10:30\nМинут: 30\n"
+                "Id: rec-20261124-100012\n\n" + body, encoding="utf-8")
+            (ws / "Записи/2026-11-24 11-00 Созвон.txt").write_text(
+                "Тема: Созвон\nНачало: 2026-11-24 11:00\nКонец: 2026-11-24 11:01\nМинут: 1\n\nкоротко\n", encoding="utf-8")
+            (ws / "Записи/2026-11-23 09-15 Старая.txt").write_text(
+                "Тема: Старая\nНачало: 2026-11-23 09:15\nКонец: 2026-11-23 09:45\nМинут: 30\n\n" + body, encoding="utf-8")
+            (ws / "Созвоны/Старая.md").write_text("# Старая\nзапись: rec-20261123-0915\n", encoding="utf-8")
+            r = subprocess.run([sys.executable, "-I", str(REPO / "connectors/calls-windows/calls.py"), "new", "72"],
+                               capture_output=True, text=True, env=dict(os.environ, BRIEF_WORKSPACE=d))
+            got = json.loads(r.stdout)["meetings"]
+        self.assertEqual([(m["id"], m["title"], m["minutes"]) for m in got], [("rec-20261124-100012", "Поставка", 30)])
+        self.assertEqual(set(got[0]) >= {"id", "ids", "title", "started", "ended", "minutes", "event", "attendees",
+                                         "my_notes", "transcript"}, True)
+
+    def test_anarlog_all_parts_done(self):
+        """Протокол склеенной записи отмечает все её части, в том числе меткой `запись:`."""
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "Созвоны").mkdir()
+            (Path(d) / "Созвоны/a.md").write_text("anarlog: 0a1b2c3d-1111-2222-3333-444455556666 "
+                                                  "9f8e7d6c-1111-2222-3333-444455556666\n", encoding="utf-8")
+            (Path(d) / "Созвоны/b.md").write_text("запись: 11111111-2222-3333-4444-555555555555\n", encoding="utf-8")
+            r = subprocess.run([sys.executable, "-I", "-c",
+                                "import importlib.util,json,sys;"
+                                f"s=importlib.util.spec_from_file_location('c',{str(REPO / 'connectors/calls-anarlog/calls.py')!r});"
+                                "m=importlib.util.module_from_spec(s);s.loader.exec_module(m);print(json.dumps(sorted(m.done_ids())))"],
+                               capture_output=True, text=True, env=dict(os.environ, BRIEF_WORKSPACE=d))
+            self.assertEqual(json.loads(r.stdout), ["0a1b2c3d-1111-2222-3333-444455556666",
+                                                    "11111111-2222-3333-4444-555555555555",
+                                                    "9f8e7d6c-1111-2222-3333-444455556666"])
+
+
 if __name__ == "__main__":
     unittest.main()

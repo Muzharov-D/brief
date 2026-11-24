@@ -9,7 +9,7 @@
 my_notes, transcript, continues?}], pending?}. Перезапуск записи (встреча без названия
 сразу после другой) склеивается с ней: ids: все части; continues: протокол, к которому
 дописать продолжение; pending: встречи, чья запись ещё идёт, их разбирать позже. В расшифровке «Speaker N»: подписи Anarlog; в протоколе
-id встречи отмечается строкой `anarlog: <id>`, по ней встреча считается разобранной.
+id встречи отмечается строкой `запись: <id>` (в старых протоколах `anarlog: <id>`), по ней встреча считается разобранной.
 """
 import json
 import os
@@ -48,8 +48,9 @@ def done_ids():
     ids = {}
     if PROTOCOLS.exists():
         for f in PROTOCOLS.glob("*.md"):
-            for i in re.findall(r"anarlog:\s*([0-9a-f-]{36})", f.read_text(errors="ignore")):
-                ids[i] = str(f)
+            for line in re.findall(r"(?:anarlog|запись):\s*([^\n]+)", f.read_text(errors="ignore")):
+                for i in re.findall(r"[0-9a-f]{8}-[0-9a-f-]{27}", line):  # все части записи, не только первая
+                    ids[i] = str(f)
     return ids
 
 

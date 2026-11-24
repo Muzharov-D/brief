@@ -38,6 +38,20 @@ AUDIT = HOME / "audit"
 STATE = HOME / "state"
 DATA = HOME / "data"
 PLATFORM = "mac" if sys.platform == "darwin" else ("windows" if os.name == "nt" else "linux")
+if PLATFORM == "windows":
+    # расписание запускает Огонька без консоли (pythonw); без этого каждый вызов коннектора или модели
+    # открывал бы на экране чёрное окно
+    _popen_init = subprocess.Popen.__init__
+
+    def _quiet_init(self, *a, **kw):
+        kw["creationflags"] = kw.get("creationflags", 0) | 0x08000000  # CREATE_NO_WINDOW
+        _popen_init(self, *a, **kw)
+    subprocess.Popen.__init__ = _quiet_init
+    for _s in (sys.stdout, sys.stderr):
+        try:
+            _s.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
 AGENT_LONG_CAPS = {"mail", "voice", "calls"}
 
 
@@ -63,9 +77,110 @@ def workspace(p=None):
     return Path(os.path.expanduser(p.get("workspace") or "~/Brief"))
 
 
-def venv_python():
+def venv_python(windowless=False):
     py = HOME / "venv" / ("Scripts/python.exe" if PLATFORM == "windows" else "bin/python")
+    if windowless and PLATFORM == "windows" and py.with_name("pythonw.exe").exists():
+        py = py.with_name("pythonw.exe")
     return str(py) if py.exists() else sys.executable
+
+
+def brief_argv():
+    """Как вызвать сам brief из Огонька: на Mac обёрткой из ~/.brief/bin, на Windows прямо через Python."""
+    sh = HOME / "bin" / "brief"
+    if PLATFORM != "windows" and sh.exists():
+        return [str(sh)]
+    return [venv_python(), "-I", str(CORE / "brief.py")]
+
+
+def spawn(argv, log):
+    """Запуск отдельным процессом, который переживает родителя (агент из расписания работает дольше tick)."""
+    kw = {"stdout": log, "stderr": log, "stdin": subprocess.DEVNULL}
+    if PLATFORM == "windows":
+        flags = 0x00000008 | 0x00000200 | 0x08000000  # DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW
+        try:  # из Планировщика заданий: выйти из его задания, иначе агент закроют вместе с tick
+            return subprocess.Popen(argv, creationflags=flags | 0x01000000, **kw)
+        except OSError:
+            return subprocess.Popen(argv, creationflags=flags, **kw)
+    return subprocess.Popen(argv, start_new_session=True, **kw)
+
+
+def which_first(names, extra=()):
+    """Первая найденная программа: из PATH или из известных мест."""
+    for n in names:
+        p = shutil.which(n)
+        if p:
+            return p
+    for c in extra:
+        c = Path(c)
+        if "*" in str(c):  # маска может стоять в середине пути: …/claude-code/*/*/claude.app/…
+            i = next(n for n, part in enumerate(c.parts) if "*" in part)
+            found = sorted(Path(*c.parts[:i]).glob(str(Path(*c.parts[i:]))), key=lambda x: x.stat().st_mtime, reverse=True)
+        else:
+            found = [c]
+        for p in found:
+            if p.is_file() and (PLATFORM == "windows" or os.access(p, os.X_OK)):
+                return str(p)
+    return ""
+
+
+def claude_bin():
+    """Claude Code: отдельно установленный или встроенный в приложение Claude (самый свежий)."""
+    h = Path.home()
+    if os.environ.get("CLAUDE_BIN"):
+        return os.environ["CLAUDE_BIN"]
+    if PLATFORM == "windows":
+        appdata, local = Path(os.environ.get("APPDATA", h)), Path(os.environ.get("LOCALAPPDATA", h))
+        return which_first(["claude.exe", "claude.cmd", "claude"],
+                           [h / ".local/bin/claude.exe", appdata / "npm/claude.cmd",
+                            local / "AnthropicClaude/app-*/resources/claude-code/claude.exe"])
+    return which_first(["claude"], [h / ".local/bin/claude", h / ".claude/local/claude", "/opt/homebrew/bin/claude",
+                                    "/usr/local/bin/claude",
+                                    h / "Library/Application Support/Claude/claude-code/*/*/claude.app/Contents/MacOS/claude"])
+
+
+def codex_bin():
+    """Codex (подписка ChatGPT): отдельно установленный, встроенный в ChatGPT или в приложение Codex."""
+    h = Path.home()
+    if os.environ.get("CODEX_BIN"):
+        return os.environ["CODEX_BIN"]
+    if PLATFORM == "windows":
+        appdata, local = Path(os.environ.get("APPDATA", h)), Path(os.environ.get("LOCALAPPDATA", h))
+        return which_first(["codex.exe", "codex.cmd", "codex"],
+                           [appdata / "npm/codex.cmd", local / "Programs/codex/codex.exe", HOME / "bin/codex.exe"])
+    return which_first(["codex"], [h / ".local/share/briefing/bin/codex",
+                                   "/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex",
+                                   "/Applications/Codex.app/Contents/Resources/codex", "/opt/homebrew/bin/codex",
+                                   "/usr/local/bin/codex"])
+
+
+def git_bash():
+    """Claude Code на Windows выполняет команды через Git Bash: без него `brief run` агенту недоступен."""
+    if PLATFORM != "windows":
+        return ""
+    if os.environ.get("CLAUDE_CODE_GIT_BASH_PATH"):
+        return os.environ["CLAUDE_CODE_GIT_BASH_PATH"]
+    for base in (os.environ.get("ProgramFiles", r"C:\Program Files"), os.environ.get("ProgramW6432", ""),
+                 str(Path(os.environ.get("LOCALAPPDATA", "")) / "Programs")):
+        p = Path(base) / "Git" / "bin" / "bash.exe"
+        if base and p.exists():
+            return str(p)
+    git = shutil.which("git")
+    if git:
+        p = Path(git).resolve().parent.parent / "bin" / "bash.exe"
+        if p.exists():
+            return str(p)
+    return ""
+
+
+def claude_area(ws):
+    """Путь рабочей папки в правилах Claude Code: //абсолютный, на Windows в виде //c/Users/..."""
+    return area_of(Path(ws).resolve().as_posix())
+
+
+def area_of(p):
+    if re.match(r"^[A-Za-z]:/", p):
+        p = p[0].lower() + p[2:]
+    return "//" + p.lstrip("/") + "/**"
 
 
 def connectors():
@@ -793,9 +908,8 @@ def run_codex(prompt, ws, log):
     """Подписка ChatGPT через Codex без окна. Командной строки, интернета, браузера и плагинов у Codex нет:
     читать, писать и звать коннекторы он может только инструментами brief (core/mcp_brief.py), внутри рабочей
     папки и с записью в журнал аудита. Свой config.toml пользователя не подключается."""
-    r = subprocess.run([str(CORE / "codex-path")], capture_output=True, text=True)
-    codex = r.stdout.strip()
-    if r.returncode or not codex:
+    codex = codex_bin()
+    if not codex:
         return 1, "не найден Codex: обновите ChatGPT или запустите установку снова"
     hint = ("Работай только инструментами сервера brief: brief (команды из задания, то, что стоит после `run`), "
             "read_file, write_file, list_files. Других инструментов нет. Файлы только внутри рабочей папки, "
@@ -828,11 +942,6 @@ def run_codex(prompt, ws, log):
     return rc, answer or service_lines(err)[-1000:]
 
 
-def claude_bin():
-    r = subprocess.run([str(CORE / "claude-path")], capture_output=True, text=True)
-    return r.stdout.strip() if r.returncode == 0 else ""
-
-
 def claude_status():
     """Claude Code и вход по подписке Claude (Pro, Max): тот же аккаунт, что и чат claude.ai."""
     exe = claude_bin()
@@ -857,9 +966,14 @@ def run_claude(prompt, ws, log, rt):
             "команды 600000 мс и дожидайся результата, не запускай их повторно параллельно. Вызывай `brief run …` "
             "отдельной командой, без конвейеров и `&&`: другие команды запрещены. Файлы читай и пиши только "
             "внутри рабочей папки; временные файлы клади в .tmp.\n")
-    area = f"/{Path(ws).resolve()}/**"  # настоящий путь: Claude сверяет правила по нему
+    area = claude_area(ws)  # настоящий путь: Claude сверяет правила по нему
     allowed = [f"Bash(brief run *)", f"Read({area})", f"Write({area})", f"Edit({area})", "Glob", "Grep"]
-    env = dict(os.environ, PATH=f"{HOME / 'bin'}:{os.environ.get('PATH', '')}")
+    env = dict(os.environ, PATH=f"{HOME / 'bin'}{os.pathsep}{os.environ.get('PATH', '')}")
+    if PLATFORM == "windows":
+        bash = git_bash()
+        if not bash:
+            return 1, "Claude Code на Windows работает через Git: запустите установку Огонька снова, она поставит Git"
+        env["CLAUDE_CODE_GIT_BASH_PATH"] = bash
     env.pop("ANTHROPIC_API_KEY", None)  # только подписка: случайный ключ API из окружения не должен списывать деньги
     with open(log, "a", encoding="utf-8") as lf:
         try:
@@ -924,10 +1038,8 @@ def cmd_profile(args):
 
 def model_row(rt, label):
     if rt.get("kind") == "codex":
-        r = subprocess.run([str(CORE / "codex-path")], capture_output=True, text=True)
-        ok = r.returncode == 0
-        if ok:
-            ok = subprocess.run([r.stdout.strip(), "login", "status"], capture_output=True).returncode == 0
+        codex = codex_bin()
+        ok = bool(codex) and subprocess.run([codex, "login", "status"], capture_output=True).returncode == 0
         return (f"{label}: Codex (ChatGPT)", ok, "", "войдите: codex login")
     if rt.get("kind") == "claude":
         st = claude_status()
@@ -970,7 +1082,11 @@ def cmd_doctor(_args):
 
 
 def schedule_owner():
-    """Чьё задание local.brief стоит в macOS: путь первой программы в нём, или None, если задания нет."""
+    """Чьё задание расписания стоит в системе: путь программы в нём, или None, если задания нет."""
+    if PLATFORM == "windows":
+        sys.path.insert(0, str(CORE))
+        import schedule  # noqa: E402
+        return schedule.owner_windows()
     import plistlib
     f = Path.home() / "Library/LaunchAgents/local.brief.plist"
     try:
@@ -982,7 +1098,10 @@ def schedule_owner():
 def schedule_mine():
     """Задание принадлежит этой установке (её ~/.brief): вторая установка или тест не трогают чужое расписание."""
     owner = schedule_owner()
-    return owner is None or Path(owner).resolve().is_relative_to(HOME.resolve())
+    if owner is None:
+        return True
+    mine = ROOT if PLATFORM == "windows" else HOME  # на Windows в задании путь к brief.py этой установки
+    return bool(owner) and Path(owner).resolve().is_relative_to(mine.resolve())
 
 
 def cmd_schedule(args):
@@ -993,6 +1112,13 @@ def cmd_schedule(args):
                  "Выключите его там или удалите ту установку.")
     p = load_profile()
     jobs = {n: agent_settings(n, f, p) for n, f in agent_files(p).items()}
+    if PLATFORM == "windows":
+        if HOME.resolve() != (Path.home() / ".brief").resolve() and (args[:1] or ["list"])[0] == "install":
+            sys.exit("Расписание Windows ставится только для основной установки (~/.brief)")
+        res = schedule.apply_windows(args[0] if args else "list", jobs, venv_python(windowless=True),
+                                     CORE / "brief.py", STATE)
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return
     app = HOME / "helpers" / "Огонёк.app" / "Contents" / "MacOS" / "ogonyok"
     res = schedule.apply(args[0] if args else "list", jobs, HOME / "bin" / "brief", workspace(p) / "Журнал", app)
     print(json.dumps(res, ensure_ascii=False, indent=2))
@@ -1021,9 +1147,9 @@ def cmd_tick(_args):
     for name, f in agent_files(p).items():
         s = agent_settings(name, f, p)
         if s["on"] and s["schedule"] and any(schedule.due(s["schedule"], m) for m in minutes):
+            (workspace(p) / "Журнал").mkdir(parents=True, exist_ok=True)
             log = open(workspace(p) / "Журнал" / "launchd.log", "a", encoding="utf-8")
-            subprocess.Popen([str(HOME / "bin" / "brief"), "agent", name], stdout=log, stderr=log,
-                             stdin=subprocess.DEVNULL, start_new_session=True)
+            spawn(brief_argv() + ["agent", name], log)
             started.append(name)
     if started:
         print(f"[{now:%Y-%m-%d %H:%M}] запущены: {', '.join(started)}")
@@ -1092,6 +1218,10 @@ def cmd_update(_args):
 
 
 def after_update():
+    if PLATFORM == "windows":
+        if schedule_owner() is not None and schedule_mine():
+            cmd_schedule(["install"])  # путь к Python или к коду мог измениться: переставляем своё задание
+        return
     if PLATFORM == "mac":
         sync_helpers()
         la = Path.home() / "Library/LaunchAgents"
