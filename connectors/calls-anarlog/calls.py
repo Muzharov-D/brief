@@ -5,6 +5,7 @@
 Использование:
   python3 -I calls.py new [часов=24]   встречи, закончившиеся за N часов, без протокола в Созвоны/
   python3 -I calls.py all [часов=24]   то же, включая уже разобранные
+  python3 -I calls.py status           открыта ли программа Anarlog: {running}
 Вывод: JSON {since, meetings:[{id, ids, title, started, ended, minutes, event, attendees,
 my_notes, transcript, continues?}], pending?}. Перезапуск записи (встреча без названия
 сразу после другой) склеивается с ней: ids: все части; continues: протокол, к которому
@@ -114,8 +115,22 @@ def groups(listing):
     return out
 
 
+def status():
+    """Открыта ли программа Anarlog: запись созвона идёт только в ней, сама она после закрытия не запускается.
+    BRIEF_ANARLOG_PROC меняет имя процесса (для тестов)."""
+    name = os.environ.get("BRIEF_ANARLOG_PROC") or "anarlog"
+    try:
+        r = subprocess.run(["pgrep", "-x", name], capture_output=True, text=True, timeout=10)
+        running = r.returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        running = False
+    print(json.dumps({"running": running, "app": "Anarlog"}, ensure_ascii=False))
+
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "new"
+    if mode == "status":
+        return status()
     hours = float(sys.argv[2]) if len(sys.argv) > 2 else 24
     now = datetime.now(timezone.utc)
     since = now - timedelta(hours=hours)

@@ -309,6 +309,13 @@ print(json.dumps([json.loads(r1.stdout), json.loads(r2.stdout)], ensure_ascii=Fa
         self.assertEqual(w("модель не ответила: <urlopen error [Errno 61] Connection refused>")[0], "down")
         self.assertEqual(w("не найден Claude Code: откройте настройку")[0], "setup")
         self.assertEqual(w("что-то странное\nвторая строка"), ("other", "что-то странное"))
+        # 25.11: VPN завис, весь день ENOTFOUND у Claude, у Codex и у бота; это не «ошибка модели», а нет интернета
+        self.assertEqual(w("API Error: Can't reach the API server, check your internet or DNS (ENOTFOUND)")[0], "offline")
+        self.assertEqual(w("ERROR: Reconnecting... 5/5\nERROR: workspace routing discovery failed")[0], "offline")
+        self.assertEqual(w("бот: нет связи с Telegram после 4 попыток: <urlopen error [Errno 8] nodename nor "
+                           "servname provided, or not known>")[0], "offline")
+        self.assertIn("не выходит в интернет", brief.reasons([({"kind": "claude"}, ("offline", "")),
+                                                             ({"kind": "codex"}, ("offline", ""))]))
         self.assertIn("кончился лимит подписки Claude", brief.reasons([({"kind": "claude"}, ("limit", ""))]))
 
     def _fallback_env(self, mode):
@@ -321,6 +328,9 @@ print(json.dumps([json.loads(r1.stdout), json.loads(r2.stdout)], ensure_ascii=Fa
                 ("ftask", "tasks", "print(json.dumps({'due': [{'title': 'Смета Петрову', 'due': '" + today + "', "
                                    "'overdue_days': 2}, {'title': 'Потом', 'due': '2099-01-01'}]}, ensure_ascii=False))"),
                 ("ftg", "tg", "c = sys.argv[1]\n"
+                              "if os.environ.get('TG_DOWN'): print(json.dumps({'error': 'бот: нет связи с Telegram после "
+                              "4 попыток: <urlopen error [Errno 8] nodename nor servname provided, or not known>'}, "
+                              "ensure_ascii=False)); sys.exit(1)\n"
                               "if c == 'notify': open(os.environ['REC'], 'a').write(open(sys.argv[2]).read() + '\\n=====\\n'); "
                               "print(json.dumps({'sent': 1}))\n"
                               "else: print(json.dumps({'awaiting_reply': [{'chat': 'Петров'}], 'unread_not_opened': 2}, "
@@ -427,6 +437,65 @@ print('Готово от Claude')
         msg = self.sent(rec)
         self.assertEqual(len(msg), 1)  # частый агент не пишет одно и то же каждые 15 минут
         self.assertIn("Claude просит войти заново", msg[0])
+
+    def alerts(self, f):
+        return [x.strip() for x in f.read_text(encoding="utf-8").split("=====") if x.strip()] if f.exists() else []
+
+    def test_offline_told_on_computer(self):
+        """Нет интернета: сообщение о сбое не уходит в Telegram и показывается уведомлением на компьютере."""
+        rec, env = self._fallback_env("auth")
+        alert = self.tmp / "alert.txt"
+        env = dict(env, TG_DOWN="1", BRIEF_ALERT_FILE=str(alert))
+        self.brief("agent", "тест", "force", env=env)
+        self.assertEqual(self.sent(rec), [])
+        got = self.alerts(alert)
+        self.assertEqual(len(got), 1)
+        self.assertIn("Claude просит войти заново", got[0])
+        self.assertTrue(any(x["event"] == "уведомление на компьютере" for x in self.audit()))
+        self.assertEqual(self.brief("alert", "проба", env=env).returncode, 0)
+        self.assertIn("проба", self.alerts(alert)[-1])
+
+    def test_offline_gate_told_once(self):
+        """Бот каждые 15 минут не достаёт до Telegram: одно уведомление на компьютере, а не по одному на каждый запуск;
+        связь вернулась и снова пропала: снова одно."""
+        rec, env = self._fallback_env("ok")
+        alert = self.tmp / "alert.txt"
+        down = dict(env, TG_DOWN="1", BRIEF_ALERT_FILE=str(alert))
+        for _ in range(3):
+            self.brief("agent", "bot-inbox", env=down)
+        got = self.alerts(alert)
+        self.assertEqual(len(got), 1, got)
+        self.assertIn("не может выйти в интернет", got[0])
+        self.brief("agent", "bot-inbox", env=dict(env, BRIEF_ALERT_FILE=str(alert)))  # связь есть
+        self.brief("agent", "bot-inbox", env=down)
+        self.assertEqual(len(self.alerts(alert)), 2)
+
+    def test_recorder_reminder(self):
+        """Скоро созвон со ссылкой Zoom, а Anarlog закрыт: одно напоминание в бота и на компьютер."""
+        rec, env = self._fallback_env("ok")
+        soon = (datetime.now().astimezone() + __import__("datetime").timedelta(minutes=20)).isoformat(timespec="seconds")
+        d = self.repo / "connectors/fcal"
+        (d / "c.py").write_text("import json\nprint(json.dumps({'events': [{'start': '" + soon + "', 'title': 'Синк', "
+                                "'links': ['https://us06web.zoom.us/j/1']}, {'start': '" + soon + "', "
+                                "'title': 'Обед'}]}, ensure_ascii=False))\n", encoding="utf-8")
+        self.brief("profile", "connectors", json.dumps({"calendar": "fcal", "tasks": "ftask", "tg": "ftg",
+                                                        "calls": "calls-anarlog"}))
+        alert = self.tmp / "alert.txt"
+        closed = dict(env, BRIEF_ALERT_FILE=str(alert), BRIEF_ANARLOG_PROC="нет-такой-программы")
+        self.brief("agent", "meeting-prep", env=closed)
+        self.brief("agent", "meeting-prep", env=closed)
+        reminders = [x for x in self.sent(rec) if "Anarlog не открыт" in x]
+        self.assertEqual(len(reminders), 1, self.sent(rec))
+        self.assertIn("«Синк»", reminders[0])
+        self.assertEqual(len(self.alerts(alert)), 1)
+        (self.home / "state/recorder.json").unlink()
+        app = subprocess.Popen(["sleep", "60"])  # «открытая программа записи»
+        try:
+            self.brief("agent", "meeting-prep", env=dict(closed, BRIEF_ANARLOG_PROC="sleep"))
+        finally:
+            app.kill()
+            app.wait()
+        self.assertEqual(len([x for x in self.sent(rec) if "Anarlog не открыт" in x]), 1)
 
     def test_retry_later(self):
         rec, env = self._fallback_env("flaky")

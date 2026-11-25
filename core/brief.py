@@ -14,6 +14,7 @@
   brief schedule install|remove|list    расписание агентов в macOS
   brief update                          обновить ядро и агентов, свои настройки не трогает
   brief access                          Mac: вызвать запросы macOS на доступ для работы в фоне (нажать «Разрешить»)
+  brief alert [текст]                   показать уведомление на компьютере (так Огонёк сообщает, если Telegram недоступен)
 Где что лежит:
   ядро и стандартные агенты: эта папка (git), обновляется командой brief update
   настройки, ключи, журнал аудита: ~/.brief (BRIEF_HOME), наружу не уходят
@@ -539,17 +540,115 @@ def render(md, p):
     return body
 
 
-def notify(text, p, kind="сбой"):
-    """Служебное сообщение владельцу от самого Огонька (не от модели): о сбое, задержке, сводка без модели."""
+def notify(text, p, kind="сбой", local=False):
+    """Служебное сообщение владельцу от самого Огонька (не от модели): о сбое, задержке, сводка без модели.
+    Не дошло до Telegram (нет интернета, бот недоступен): то же уведомлением на самом компьютере, иначе о сбое
+    никто не узнает. local=True: на компьютере в любом случае (то, что человек должен увидеть сразу)."""
     f = STATE / f"notify-{os.getpid()}.txt"
     STATE.mkdir(parents=True, exist_ok=True)
     f.write_text(text, encoding="utf-8")
     os.environ["BRIEF_FEED_KIND"] = kind  # в ленте на главной такие сообщения помечены
     try:
-        cmd_run(["tg", "notify", str(f)], capture=True, timeout=120)
+        code, _ = cmd_run(["tg", "notify", str(f)], capture=True, timeout=120)
     finally:
         os.environ.pop("BRIEF_FEED_KIND", None)
         f.unlink()
+    if code != 0 or local:
+        local_alert(text, p)
+    return code
+
+
+def local_alert(text, p=None):
+    """Уведомление в углу экрана этого компьютера, мимо Telegram. Никогда не падает: это последний канал."""
+    title = ((p or {}).get("assistant_name") or "Огонёк") if isinstance(p, dict) else "Огонёк"
+    text = re.sub(r"<[^>]+>", "", text or "").strip()
+    short = text if len(text) <= 240 else text[:237] + "…"
+    audit("уведомление на компьютере", chars=len(text))
+    try:
+        if os.environ.get("BRIEF_ALERT_FILE"):  # тесты: вместо окна в файл
+            with open(os.environ["BRIEF_ALERT_FILE"], "a", encoding="utf-8") as fh:
+                fh.write(f"{title}: {text}\n=====\n")
+        elif PLATFORM == "mac":
+            subprocess.run(["osascript", "-e", "on run a\ndisplay notification (item 2 of a) with title (item 1 of a) "
+                            "sound name \"Glass\"\nend run", title, short], capture_output=True, timeout=30)
+        elif PLATFORM == "windows":  # всплывающее окно у часов; на настоящем Windows не проверено
+            ps = ("Add-Type -AssemblyName System.Windows.Forms; $n = New-Object System.Windows.Forms.NotifyIcon; "
+                  "$n.Icon = [System.Drawing.SystemIcons]::Information; $n.Visible = $true; "
+                  "$n.ShowBalloonTip(15000, $env:BRIEF_ALERT_T, $env:BRIEF_ALERT_X, 'Info'); "
+                  "Start-Sleep -Seconds 16; $n.Dispose()")
+            subprocess.Popen(["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", ps],
+                             env=dict(os.environ, BRIEF_ALERT_T=title, BRIEF_ALERT_X=short))
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def cmd_alert(args):
+    """brief alert [текст]: проверить, что уведомления Огонька видны на этом компьютере."""
+    local_alert(" ".join(args) or "Так выглядит уведомление, если Telegram недоступен.", load_profile())
+
+
+OFFLINE = re.compile(r"enotfound|can't reach the api|nodename nor servname|getaddrinfo|name or service not known|"
+                     r"temporary failure in name resolution|network is unreachable|no route to host|"
+                     r"routing discovery failed|нет связи с telegram|errno 8\b|errno -[23]\b|errno 11001", re.I)
+
+
+def offline_alert(agent, why, p):
+    """Частый агент пропущен, потому что компьютер не выходит в интернет. Telegram тоже недоступен, поэтому
+    говорим уведомлением на компьютере, и не чаще раза в 6 часов на все агенты сразу."""
+    if failures("связь", ["offline"]):
+        who = p.get("assistant_name") or "Огонёк"
+        local_alert(f"{who} не может выйти в интернет, поэтому агенты не работают и сообщения в Telegram не уходят. "
+                    f"Проверьте Wi-Fi и VPN. Подробно: {why[:120]}", p)
+
+
+def recorder_check(p):
+    """Перед созвоном: запись идёт только если программа записи открыта (Anarlog сам не запускается). Встреча со
+    ссылкой на видеосвязь через 0-40 минут, а программа не открыта: предупредить один раз на встречу."""
+    if "calls-anarlog" not in as_list(p.get("connectors", {}).get("calls")):
+        return
+    code, out = cmd_run(["calendar", "1"], capture=True, timeout=120)
+    try:
+        events = json.loads(out).get("events", []) if code == 0 else []
+    except ValueError:
+        events = []
+    now = datetime.now().astimezone()
+    soon = []
+    for e in events:
+        try:
+            start = datetime.fromisoformat(e["start"])
+        except (KeyError, ValueError):
+            continue
+        where = " ".join(str(e.get(k) or "") for k in ("links", "location", "notes"))
+        if e.get("canceled") or e.get("all_day") or not VIDEO.search(where):
+            continue
+        if timedelta(minutes=-5) <= start - now <= timedelta(minutes=40):
+            soon.append((f"{e.get('title', '')}|{e['start']}", start, e.get("title") or "встреча"))
+    if not soon:
+        return
+    f = STATE / "recorder.json"
+    try:
+        told = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        told = []
+    soon = [x for x in soon if x[0] not in told]
+    if not soon:
+        return
+    code, out = cmd_run(["calls", "status"], capture=True, timeout=60)
+    try:
+        if code == 0 and json.loads(out).get("running"):
+            return
+    except ValueError:
+        pass
+    key, start, title = soon[0]
+    who = p.get("assistant_name") or "Огонёк"
+    notify(f"{who}: в {start:%H:%M} «{title}», а Anarlog не открыт: созвон не запишется, протокола не будет. "
+           "Откройте Anarlog и включите запись.", p, kind="напоминание", local=True)
+    STATE.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps((told + [k for k, _, _ in soon])[-200:], ensure_ascii=False), encoding="utf-8")
+
+
+VIDEO = re.compile(r"zoom\.us|ktalk\.ru|telemost|meet\.google|teams\.microsoft|teams\.live|webex|jazz\.sber|"
+                   r"salutejazz|dion\.vc|vk\.com/call|calls\.vk|mts-link|webinar\.ru|trueconf|bigbluebutton|whereby", re.I)
 
 
 LOG_DAYS = 14
@@ -618,8 +717,14 @@ def cmd_agent(args):
             return
         sys.path.insert(0, str(CORE))
         import gate  # noqa: E402
+        if name == "meeting-prep" and not dry:
+            recorder_check(p)  # до проверки встречи: предупредить о записи нужно и тогда, когда готовить нечего
         if not force:
             go, why = gate.check(name, lambda *a: cmd_run(list(a), capture=True, timeout=300))
+            if OFFLINE.search(why or ""):
+                offline_alert(name, why, p)
+            elif not dry:
+                failures("связь", None)  # связь есть: следующий обрыв снова стоит сообщить
             if not go:
                 say("пропуск: " + why)
                 return
@@ -726,6 +831,8 @@ def why_failed(text):
     """Почему модель не отработала, простыми словами: (вид, подробность). Виды: limit, auth, setup, down, other."""
     t = text or ""
     low = t.lower()
+    if OFFLINE.search(t):
+        return "offline", ""
     if re.search(r"не найден", low):
         return "setup", ""
     if re.search(r"usage limit|rate.?limit|limit reached|hit your limit|quota|\b429\b|лимит", low):
@@ -754,7 +861,8 @@ def reasons(fails):
         text = {"limit": f"кончился лимит подписки {who}" + (f" ({detail})" if detail else ""),
                 "auth": f"{who} просит войти заново: откройте Огонёк, шаг «Где думает помощник»",
                 "setup": f"{who} не найден на компьютере: откройте Огонёк, шаг «Где думает помощник»",
-                "down": f"{who} сейчас не отвечает"}.get(kind, f"{who} вернул ошибку: {detail}")
+                "down": f"{who} сейчас не отвечает",
+                "offline": "компьютер не выходит в интернет: проверьте Wi-Fi и VPN"}.get(kind, f"{who} вернул ошибку: {detail}")
         if text not in out:
             out.append(text)
     return "; ".join(out) or "модель не ответила"
@@ -1381,7 +1489,7 @@ def access_rows(p):
 
 COMMANDS = {"setup": cmd_setup, "run": cmd_run, "agent": cmd_agent, "agents": cmd_agents, "connectors": cmd_connectors,
             "profile": cmd_profile, "audit": cmd_audit, "doctor": cmd_doctor, "schedule": cmd_schedule, "tick": cmd_tick,
-            "update": cmd_update, "access": cmd_access}
+            "update": cmd_update, "access": cmd_access, "alert": cmd_alert}
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
