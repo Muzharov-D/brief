@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Огонёк в Telegram: макеты главного экрана</title>
+<style>
+:root{--ink:#292C30;--paper:#F4F2EE;--card:#fff;--line:#E4E1DB;--muted:#6E7278;--fire:#F58A2B;--fire-t:#D07525;--soft:#FFF4E6;--ok:#3F7A58}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#DCD8D0;font-family:-apple-system,system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;padding:36px 40px 48px}
+h1.page{font-size:26px;font-weight:700;margin-bottom:6px}
+p.page{color:#5c574f;font-size:15px;margin-bottom:28px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.col h2{font-size:19px;font-weight:700;margin:0 0 4px 6px}
+.col p.d{font-size:13.5px;color:#5c574f;margin:0 0 14px 6px;max-width:390px;line-height:1.4}
+.phone{width:414px;height:868px;border-radius:58px;background:#111214;padding:12px;box-shadow:0 30px 60px rgba(20,22,26,.25)}
+.scr{width:390px;height:844px;border-radius:46px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:var(--paper)}
+.status{height:50px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 30px 6px 34px;font-size:15px;font-weight:600}
+.tg{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:16px}
+.tg .x{color:var(--fire-t)}
+.tg .t{text-align:center;line-height:1.1}
+.tg .t b{display:block;font-size:16px}
+.tg .t small{font-size:12px;color:var(--muted)}
+.tg .m{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--fire-t);color:var(--fire-t);display:flex;align-items:center;justify-content:center;font-size:14px;letter-spacing:1px}
+.body{flex:1;overflow:hidden;padding:6px 16px 0}
+.muted{color:var(--muted)}
+/* А */
+.hello small{font-size:13px;color:var(--muted);font-weight:600}
+.hello h3{font-size:28px;letter-spacing:-.02em;margin:2px 0 2px}
+.hello p{font-size:13px;color:var(--muted)}
+.first{margin-top:14px;background:var(--soft);border:1px solid #F7D9B5;border-radius:18px;padding:14px 16px}
+.first .k{font-size:12px;font-weight:700;color:var(--fire-t);text-transform:none}
+.first b{display:block;font-size:17px;margin:3px 0 2px;line-height:1.25}
+.first .w{font-size:13px;color:#7a6a58}
+.first .btns{display:flex;gap:8px;margin-top:10px}
+.btn{font-size:14px;font-weight:600;padding:8px 14px;border-radius:12px;background:var(--fire);color:#fff}
+.btn.g{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.sec{margin-top:16px}
+.sec .h{font-size:13px;font-weight:700;color:var(--muted);margin:0 4px 6px;display:flex;justify-content:space-between}
+.card{background:var(--card);border-radius:16px;overflow:hidden}
+.it{display:flex;gap:12px;padding:11px 14px;align-items:center;border-top:1px solid var(--line)}
+.it:first-child{border-top:0}
+.it .tm{font-size:15px;font-weight:700;width:46px;flex:none}
+.it .tx{flex:1;min-width:0}
+.it .tx b{display:block;font-size:15px;font-weight:600}
+.it .tx span{font-size:13px;color:var(--muted)}
+.chip{font-size:12px;font-weight:600;padding:4px 9px;border-radius:10px;background:var(--soft);color:var(--fire-t);white-space:nowrap}
+.chip.ok{background:#E7F0EA;color:var(--ok)}
+.av{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.skip{margin-top:10px;font-size:13px;color:var(--muted);padding:0 4px}
+.tabs{height:84px;background:rgba(255,255,255,.92);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding-top:9px;position:relative}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#8f8a82;font-weight:600;width:64px}
+.tab i{width:24px;height:24px;border-radius:7px;border:2px solid currentColor;display:block}
+.tab.on{color:var(--fire-t)}
+.mic{position:absolute;right:18px;bottom:100px;width:58px;height:58px;border-radius:50%;background:var(--fire);box-shadow:0 10px 24px rgba(245,138,43,.45);display:flex;align-items:center;justify-content:center}
+.mic svg{width:24px;height:24px}
+/* Б */
+.dhead{display:flex;justify-content:space-between;align-items:flex-end}
+.dhead h3{font-size:28px;letter-spacing:-.02em}
+.dhead small{font-size:13px;color:var(--muted);font-weight:600}
+.strip{margin:12px 0 4px;height:8px;border-radius:4px;background:#E4E0D8;position:relative}
+.strip .done{position:absolute;left:0;top:0;bottom:0;width:19%;border-radius:4px;background:var(--fire)}
+.strip .now{position:absolute;left:19%;top:-5px;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:#fff;border:4px solid var(--fire)}
+.strip .ev{position:absolute;top:1px;width:6px;height:6px;border-radius:50%;background:var(--ink)}
+.slab{display:flex;justify-content:space-between;font-size:11px;color:#8f8a82;font-weight:600}
+.tl{margin-top:14px;position:relative}
+.tl:before{content:"";position:absolute;left:52px;top:8px;bottom:0;width:2px;background:#DDD8CF}
+.ti{display:flex;gap:0;margin-bottom:10px;position:relative}
+.ti .tm{width:44px;font-size:14px;font-weight:700;padding-top:12px;flex:none}
+.ti .dot{width:18px;flex:none;position:relative}
+.ti .dot:after{content:"";position:absolute;left:3px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--paper);border:2px solid #B9B3A8}
+.ti.ok .dot:after{background:var(--ok);border-color:var(--ok)}
+.ti.hot .dot:after{background:var(--fire);border-color:var(--fire)}
+.ti .bx{flex:1;margin-left:8px;background:#fff;border-radius:14px;padding:10px 12px}
+.ti.hot .bx{background:var(--soft);border:1px solid #F7D9B5}
+.ti.ok .bx{background:transparent;padding:10px 4px}
+.ti .bx b{display:block;font-size:15px}
+.ti .bx span{font-size:13px;color:var(--muted)}
+.ti .bx .pr{margin-top:7px;padding-top:7px;border-top:1px dashed var(--line);font-size:12.5px;color:#5c574f;line-height:1.4}
+.askbar{height:96px;padding:10px 14px 30px;display:flex;gap:10px;align-items:center;background:var(--paper);border-top:1px solid var(--line)}
+.askbar .in{flex:1;height:44px;border-radius:22px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;padding:0 16px;font-size:15px;color:#9a958c}
+.askbar .mc{width:44px;height:44px;border-radius:50%;background:var(--fire);display:flex;align-items:center;justify-content:center}
+.askbar .mc svg{width:20px;height:20px}
+/* В */
+.dark{background:#000;color:#fff}
+.dark .tg .t small{color:#8d8d93}
+.dark .tg .x{color:#FF9F45}
+.dark .tg .m{border-color:#FF9F45;color:#FF9F45}
+.dark .muted,.dark .hello small,.dark .hello p{color:#8d8d93}
+.gl .h{font-size:13px;color:#8d8d93;margin:18px 16px 7px;text-transform:uppercase;letter-spacing:.02em}
+.gl .card{background:#1c1c1e;border-radius:12px}
+.gl .it{border-top:.5px solid #38383a;padding:10px 14px}
+.gl .it .tx span{color:#8d8d93}
+.gl .ic{width:30px;height:30px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.gl .chev{color:#5a5a5e;font-size:18px}
+.dark .first{background:#2a1d10;border-color:#4a3118}
+.dark .first .k{color:#FF9F45}
+.dark .first .w{color:#c9a987}
+.dark .tabs{background:rgba(22,22,24,.94);border-top-color:#2c2c2e}
+.dark .tab{color:#8d8d93}
+.dark .tab.on{color:#FF9F45}
+.dark .chip{background:#3a2610;color:#FF9F45}
+</style>
+</head>
+<body>
+<h1 class="page">Огонёк в Telegram: главный экран, три варианта</h1>
+<p class="page">Данные одинаковые и выдуманы, сюжет тот же, что в фоне к выступлению: смета для Ольги Петровой, встреча о стенде, подрядчики с Анной. Экран 390 × 844, как iPhone 15.</p>
+<div class="row">
+
+<!-- А -->
+<div class="col">
+<h2>А. Сводка</h2>
+<p class="d">Утренняя сводка бота, только живая: сверху то, с чего начать, ниже встречи и кто ждёт ответа. Внизу вкладки и кнопка голоса.</p>
+<div class="phone"><div class="scr">
+<div class="status"><span>10:20</span><span>●●● 5G ▮</span></div>
+<div class="tg"><span class="x">Закрыть</span><span class="t"><b>Огонёк</b><small>мини-приложение</small></span><span class="m">···</span></div>
+<div class="body">
+<div class="hello"><small>Четверг, 27 ноября</small><h3>Доброе утро!</h3><p>Собрано в 8:00 из почты, чатов, календаря и задач</p></div>
+<div class="first"><div class="k">Сначала</div><b>Смета по стенду для Ольги Петровой</b><div class="w">Срок сегодня, обещали на встрече о стенде</div>
+<div class="btns"><span class="btn">Открыть</span><span class="btn g">Перенести</span></div></div>
+<div class="sec"><div class="h"><span>Встречи сегодня</span><span>2</span></div><div class="card">
+<div class="it"><span class="tm">11:00</span><span class="tx"><b>Планёрка отдела</b><span>через 40 минут</span></span><span class="chip">Подготовка</span></div>
+<div class="it"><span class="tm">15:30</span><span class="tx"><b>Подрядчики стенда</b><span>Анна Ковалёва, Телемост</span></span><span class="chip">Подготовка</span></div>
+</div></div>
+<div class="sec"><div class="h"><span>Ждут ответа</span><span>2</span></div><div class="card">
+<div class="it"><span class="av" style="background:#7C8B6F">АК</span><span class="tx"><b>Анна Ковалёва</b><span>Два подрядчика на выбор</span></span><span class="chip ok">Черновик</span></div>
+<div class="it"><span class="av" style="background:#8E7F6A">Б</span><span class="tx"><b>Бухгалтерия</b><span>Счёт за ноябрь</span></span><span class="chip ok">Черновик</span></div>
+</div></div>
+<div class="skip">Можно не читать: 34 рассылки</div>
+</div>
+<div class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+<div class="tabs"><span class="tab on"><i></i>Сегодня</span><span class="tab"><i></i>Встречи</span><span class="tab"><i></i>Задачи</span><span class="tab"><i></i>Спросить</span></div>
+</div></div>
+</div>
+
+<!-- Б -->
+<div class="col">
+<h2>Б. День по часам</h2>
+<p class="d">Лента дня: что уже сделано, что сейчас, что впереди. Подготовка к встрече раскрыта прямо в ленте. Внизу строка, как в чате: спросить или сказать голосом.</p>
+<div class="phone"><div class="scr">
+<div class="status"><span>10:20</span><span>●●● 5G ▮</span></div>
+<div class="tg"><span class="x">Закрыть</span><span class="t"><b>Огонёк</b><small>мини-приложение</small></span><span class="m">···</span></div>
+<div class="body">
+<div class="dhead"><h3>Сегодня</h3><small>Четверг, 27 ноября</small></div>
+<div class="strip"><span class="done"></span><span class="ev" style="left:25%"></span><span class="ev" style="left:62%"></span><span class="now"></span></div>
+<div class="slab"><span>8:00</span><span>сейчас 10:20</span><span>20:00</span></div>
+<div class="tl">
+<div class="ti ok"><span class="tm">8:00</span><span class="dot"></span><span class="bx"><b>Сводка готова</b><span>40 писем, 12 сообщений, 34 рассылки можно не читать</span></span></div>
+<div class="ti hot"><span class="tm">10:00</span><span class="dot"></span><span class="bx"><b>Смета по стенду для Ольги</b><span>Срок сегодня · из голосового</span></span></div>
+<div class="ti"><span class="tm">11:00</span><span class="dot"></span><span class="bx"><b>Планёрка отдела</b><span>через 40 минут · 6 человек</span>
+<div class="pr">Вы обещали показать план выставки.<br>Спросить: кто едет на монтаж стенда?</div></span></div>
+<div class="ti"><span class="tm">15:30</span><span class="dot"></span><span class="bx"><b>Подрядчики стенда</b><span>Анна Ковалёва · Телемост</span>
+<div class="pr">Бюджет до 1,2 млн ₽. «Павильон» (1,24 млн) не укладывается.</div></span></div>
+<div class="ti"><span class="tm">17:00</span><span class="dot"></span><span class="bx"><b>Ответить Бухгалтерии</b><span>Счёт за ноябрь · черновик готов</span></span></div>
+</div>
+</div>
+<div class="askbar"><span class="in">Спросите или скажите голосом</span><span class="mc"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span></div>
+</div></div>
+</div>
+
+<!-- В -->
+<div class="col">
+<h2>В. Как сам Telegram</h2>
+<p class="d">Цвета темы Telegram у человека, на снимке тёмная. Списки как в настройках Telegram, оранжевый только для главного.</p>
+<div class="phone"><div class="scr dark">
+<div class="status"><span>10:20</span><span>●●● 5G ▮</span></div>
+<div class="tg"><span class="x">Закрыть</span><span class="t"><b>Огонёк</b><small>мини-приложение</small></span><span class="m">···</span></div>
+<div class="body gl" style="padding:6px 16px 0">
+<div class="hello"><small>Четверг, 27 ноября</small><h3>Доброе утро!</h3></div>
+<div class="first"><div class="k">Сначала</div><b>Смета по стенду для Ольги Петровой</b><div class="w">Срок сегодня</div></div>
+<div class="h">Встречи</div><div class="card">
+<div class="it"><span class="ic" style="background:#FF9F45">11</span><span class="tx"><b>Планёрка отдела</b><span>11:00, через 40 минут</span></span><span class="chev">›</span></div>
+<div class="it"><span class="ic" style="background:#5E8BD6">15</span><span class="tx"><b>Подрядчики стенда</b><span>15:30, Анна Ковалёва</span></span><span class="chev">›</span></div>
+</div>
+<div class="h">Ждут ответа</div><div class="card">
+<div class="it"><span class="ic" style="background:#3FA36B">АК</span><span class="tx"><b>Анна Ковалёва</b><span>Два подрядчика на выбор</span></span><span class="chip">Черновик</span></div>
+<div class="it"><span class="ic" style="background:#8E8E93">Б</span><span class="tx"><b>Бухгалтерия</b><span>Счёт за ноябрь</span></span><span class="chip">Черновик</span></div>
+</div>
+<div class="h">Ещё</div><div class="card">
+<div class="it"><span class="ic" style="background:#636366">34</span><span class="tx"><b>Рассылки</b><span>можно не читать</span></span><span class="chev">›</span></div>
+</div>
+</div>
+<div class="tabs"><span class="tab on"><i></i>Сегодня</span><span class="tab"><i></i>Встречи</span><span class="tab"><i></i>Задачи</span><span class="tab"><i></i>Спросить</span></div>
+</div></div>
+</div>
+
+</div>
+</body>
+</html>
