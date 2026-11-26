@@ -205,7 +205,7 @@ const tob64 = u => btoa(Array.from(u, c => String.fromCharCode(c)).join(''));
 let boxKey;
 const key = () => boxKey || (boxKey = crypto.subtle.importKey('raw', unb64(BOX.k), 'AES-GCM', false, ['encrypt', 'decrypt']));
 async function loadBox() {
-  const r = await fetch('/api/box?id=' + BOX.b + '&part=day', {cache: 'no-store'});
+  const r = await fetch('api/box?id=' + BOX.b + '&part=day', {cache: 'no-store'});
   if (r.status === 404) throw new Error('empty');
   if (!r.ok) throw new Error('net');
   const o = await r.json();
@@ -215,7 +215,7 @@ async function loadBox() {
 async function act(a) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = new Uint8Array(await crypto.subtle.encrypt({name: 'AES-GCM', iv}, await key(), new TextEncoder().encode(JSON.stringify(a))));
-  const r = await fetch('/api/box?id=' + BOX.b + '&part=act', {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({iv: tob64(iv), ct: tob64(ct)})});
+  const r = await fetch('api/box?id=' + BOX.b + '&part=act', {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({iv: tob64(iv), ct: tob64(ct)})});
   if (!r.ok) throw new Error('net');
 }
 function live(d) {

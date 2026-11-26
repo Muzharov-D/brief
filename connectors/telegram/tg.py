@@ -340,6 +340,37 @@ def notify(text):
                     ' buttons {"OK"} default button "OK"'], capture_output=True)
 
 
+QR_PAGE = """<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta http-equiv="refresh" content="10">
+<title>Вход Огонька в Telegram</title><style>
+body{margin:0;background:#F4F2EE;color:#292C30;font:17px/1.5 -apple-system,system-ui,"Segoe UI",sans-serif;
+display:flex;justify-content:center}main{max-width:820px;padding:40px 24px;display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start}
+.qr{background:#fff;border-radius:20px;padding:18px;width:300px;flex:none}.qr svg{width:100%;height:auto;display:block}
+.tx{flex:1;min-width:280px}h1{font-size:28px;margin:0 0 16px}ol{padding-left:22px;margin:0 0 18px}li{margin:6px 0}
+.n{color:#6E7278;font-size:15px}b{font-weight:650}</style></head><body><main>
+<div class="qr">{svg}</div><div class="tx"><h1>Отсканируйте код телефоном</h1><ol>
+<li>Откройте <b>Telegram на телефоне</b>.</li>
+<li>Зайдите в <b>Настройки</b>, затем <b>Устройства</b>, затем <b>Подключить устройство</b>.</li>
+<li>Наведите камеру на этот код.</li></ol>
+<p class="n">Обычная камера телефона не подойдёт: сканировать нужно из Telegram. Код обновляется сам каждые две минуты,
+эту страницу закрывать не нужно.</p>
+<p class="n">Сканирует владелец этого компьютера своим телефоном: Огонёк будет читать чаты того аккаунта,
+которым отсканировали код. Telegram пришлёт сообщение о новом входе с Mac: это Огонёк, сеанс не завершайте.</p>
+<p class="n">Огонёк будет читать только чаты из папок, которые вы выберете следующим шагом. Отключить его можно
+в любой момент там же, в Устройствах.</p></div></main></body></html>"""
+
+
+def qr_page(f, url):
+    """Страница с QR-кодом и подсказкой, что с ним делать; сама обновляется, когда код меняется."""
+    import io
+    import qrcode
+    import qrcode.image.svg
+    buf = io.BytesIO()
+    qrcode.make(url, image_factory=qrcode.image.svg.SvgPathFillImage, box_size=20).save(buf)
+    svg = buf.getvalue().decode("utf-8")
+    f.write_text(QR_PAGE.replace("{svg}", svg[svg.find("<svg"):]), encoding="utf-8")
+    f.chmod(0o600)
+
+
 def show_qr(f):
     """QR-код для входа: на Mac в Safari, как было, на Windows в браузере по умолчанию."""
     import subprocess
@@ -390,8 +421,6 @@ def pick_many(titles, current):
 
 async def gui_login():
     """Вход без терминала: ключи в окнах macOS, сам вход по QR-коду с телефона."""
-    import qrcode
-    import qrcode.image.svg
     import subprocess
     from telethon.errors import SessionPasswordNeededError
 
@@ -414,14 +443,15 @@ async def gui_login():
         print("ключи сохранены")
 
     c = client(load_config())
-    await c.connect()
+    await TelegramClient.connect(c)  # без правил папок: при входе папки ещё могут быть не выбраны
     if not await c.is_user_authorized():
-        qr_file = DATA / "login-qr.svg"
+        qr_file = DATA / "login-qr.html"
         try:
             for attempt in range(5):
                 qr = await c.qr_login()
-                qrcode.make(qr.url, image_factory=qrcode.image.svg.SvgPathFillImage, box_size=20).save(str(qr_file))
-                show_qr(qr_file)
+                qr_page(qr_file, qr.url)
+                if attempt == 0:  # дальше страница обновляется сама, новых вкладок не открываем
+                    show_qr(qr_file)
                 print("QR показан, жду сканирования")
                 try:
                     await qr.wait(timeout=110)
@@ -521,8 +551,10 @@ async def check():
         cfg = json.loads(BOT.read_text())
         r = bot_call(cfg["token"], "getMe", {})
         rows.append({"name": "Telegram: бот", "ok": bool(r.get("ok")),
-                     "detail": "@" + r["result"]["username"] if r.get("ok") else str(r.get("description", ""))[:120],
-                     "fix": "brief setup, шаг Telegram: подключите бота заново"})
+                     "detail": "@" + r["result"]["username"] if r.get("ok")
+                     else "Telegram не принимает токен: бот удалён или токен перевыпущен в @BotFather"
+                     if r.get("error_code") == 401 else str(r.get("description", ""))[:120],
+                     "fix": "новый бот или новый токен в @BotFather, затем brief run tg bot-setup и brief app setup"})
     else:
         rows.append({"name": "Telegram: бот", "ok": False, "detail": "не подключён",
                      "fix": "brief setup, шаг Telegram: свой бот через @BotFather"})

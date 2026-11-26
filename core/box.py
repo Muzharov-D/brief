@@ -22,6 +22,7 @@ import secrets
 import subprocess
 import sys
 import tempfile
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -30,7 +31,12 @@ import brief as B
 
 CONF = B.DATA / "miniapp.json"
 LAST = B.STATE / "miniapp-last.json"
-HOST = os.environ.get("BRIEF_MINIAPP_HOST", "https://ogonyok-demo.vercel.app")
+# Адрес на своём домене (прокси Caddy на avandoc.online к тому же Vercel): мини-приложения на *.vercel.app у свежих
+# ботов Telegram принимает за фишинг. Старый адрес остаётся запасным, пока новый не отвечает, а ящики уже
+# настроенных компьютеров переезжают сами при следующей сборке дня (данные те же, хранилище одно).
+NEW_HOST = "https://avandoc.online/ogonyok"
+OLD_HOST = "https://ogonyok-demo.vercel.app"
+HOST_ENV = os.environ.get("BRIEF_MINIAPP_HOST")
 LABEL = "local.brief.miniapp"
 EVERY = 300
 CALL_HOSTS = (("zoom.us", "Zoom"), ("telemost", "Телемост"), ("ktalk", "Контур Толк"), ("teams.microsoft", "Teams"),
@@ -50,10 +56,36 @@ def conf():
         return None
 
 
+def reachable(host):
+    """Отвечает ли мини-приложение по адресу: пустой ящик даёт 404 от нашего же сервера."""
+    try:
+        with urllib.request.urlopen(f"{host}/api/box?id={'0' * 32}&part=day", timeout=10) as r:
+            return r.status == 200
+    except urllib.error.HTTPError as e:
+        return e.code == 404 and "json" in (e.headers.get("Content-Type") or "")
+    except OSError:
+        return False
+
+
+def best_host():
+    return HOST_ENV or (NEW_HOST if reachable(NEW_HOST) else OLD_HOST)
+
+
+def move_host(c):
+    """Ящик на старом адресе, а новый уже работает: переносим адрес и кнопку бота. Данные те же (одно хранилище)."""
+    if HOST_ENV or c.get("host") != OLD_HOST or not reachable(NEW_HOST):
+        return c
+    c["host"] = NEW_HOST
+    CONF.write_text(json.dumps(c, indent=2), encoding="utf-8")
+    CONF.chmod(0o600)
+    set_button(c)
+    return c
+
+
 def new_conf():
     write = secrets.token_hex(32)
     c = {"box": hashlib.sha256(write.encode()).hexdigest()[:32], "write": write, "key": b64(secrets.token_bytes(32)),
-         "host": HOST, "created": datetime.now().isoformat(timespec="seconds")}
+         "host": best_host(), "created": datetime.now().isoformat(timespec="seconds")}
     CONF.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     CONF.write_text(json.dumps(c, indent=2), encoding="utf-8")
     CONF.chmod(0o600)
@@ -312,6 +344,7 @@ def sync(quiet=False):
     if not c:
         print(json.dumps({"error": "мини-приложение не настроено: brief app setup"}, ensure_ascii=False))
         return 1
+    c = move_host(c)
     day = build_day()
     done = apply_actions(c, day)
     if done:  # задачи закрыты: собрать день заново, чтобы мини-приложение увидело их выполненными
