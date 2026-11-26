@@ -77,7 +77,10 @@ for e in events {
             let st = statusName(a.participantStatus)
             return st.isEmpty ? name : "\(name) (\(st))"
         }
-        if let me = att.first(where: { $0.isCurrentUser }) { item["my_status"] = statusName(me.participantStatus) }
+        if let me = att.first(where: { $0.isCurrentUser }) {
+            item["my_status"] = statusName(me.participantStatus)
+            if let n = me.name, !n.isEmpty { item["me"] = n }
+        }
     }
     if let n = e.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !n.isEmpty { item["notes"] = String(n.prefix(600)) }
     out.append(item)

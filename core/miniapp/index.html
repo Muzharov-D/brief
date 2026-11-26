@@ -84,6 +84,8 @@ h2{font-size:22px;letter-spacing:-.01em;line-height:1.2}
 .ppl span{background:#fff;border:1px solid var(--line);border-radius:10px;padding:5px 10px;font-size:13px;font-weight:600}
 .blk{background:#fff;border-radius:16px;padding:12px 14px;line-height:1.45}
 .blk li{margin-left:18px;padding:3px 0}
+.blk.md p{margin:4px 0}.blk.md ul{margin:4px 0}.blk.md b{font-weight:650}
+.proto.late .ic{background:#FBEAE6;color:#B0432A;font-weight:800}
 .dec li::marker{color:var(--ok)}
 .tk{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
 .tk:first-child{border-top:0}
@@ -124,6 +126,46 @@ textarea{width:100%;min-height:110px;border:1px solid var(--line);border-radius:
 .toast{position:fixed;left:16px;right:16px;bottom:calc(80px + var(--sb));background:var(--ink);color:#fff;border-radius:14px;padding:12px 14px;font-size:14px;z-index:30;animation:up .25s}
 .home{display:flex;width:100%;align-items:center;gap:10px;margin-top:16px;background:#fff;border:1px dashed var(--soft-b);border-radius:14px;padding:11px 14px;font-size:14px;font-weight:600;color:var(--fire-t);text-align:left}
 .note{font-size:12.5px;color:var(--faint);margin-top:10px;line-height:1.4}
+/* главное событие дня */
+.hero{display:block;width:100%;text-align:left;margin-top:14px;background:var(--ink);color:#fff;border-radius:18px;padding:14px 16px 13px;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(245,138,43,.35),rgba(245,138,43,0) 70%)}
+.hero .k{font-size:12px;font-weight:700;color:#FFBC46}
+.hero b{display:block;font-size:20px;letter-spacing:-.01em;margin:3px 0 2px}
+.hero .s{font-size:13.5px;color:#C9CCD0}
+.hero .rd{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.hero .rd span{font-size:12px;font-weight:600;padding:4px 9px;border-radius:9px;background:rgba(255,255,255,.1);color:#fff}
+.hero .rd span:before{content:"✓ ";color:#FFBC46}
+.ti.star .dot:after{background:var(--ink);border-color:var(--ink)}
+.ti.star .bx{background:var(--ink);color:#fff}
+.ti.star .bx span{color:#C9CCD0}
+.ti.star .pr{border-top-color:rgba(255,255,255,.18);color:#E9E4DA}
+.msgline{margin-top:14px;background:var(--soft);border:1px solid var(--soft-b);border-radius:16px;padding:12px 14px;font-size:16px;font-weight:600;line-height:1.35}
+.msgline small{display:block;font-size:12px;font-weight:700;color:var(--fire-t);margin-bottom:3px}
+.ready{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ready span{font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:10px;background:var(--ok-s);color:var(--ok)}
+.vid{border-radius:16px;overflow:hidden;background:#000;aspect-ratio:16/9}
+.vid video{width:100%;height:100%;display:block;object-fit:cover;background:#F4F2EE}
+.chap{display:flex;gap:12px;padding:11px 14px;border-top:1px solid var(--line);width:100%;text-align:left;align-items:flex-start}
+.chap:first-child{border-top:0}
+.chap .at{font-size:13px;font-weight:700;color:var(--fire-t);width:34px;flex:none;padding-top:1px;font-variant-numeric:tabular-nums}
+.chap .tx{flex:1;min-width:0}
+.chap .tx b{display:block;font-size:15px;font-weight:600}
+.chap .tx i{display:block;font-style:normal;font-size:12.5px;color:var(--faint);margin-top:2px}
+.chap .tx span{display:block;font-size:14px;color:#4a463f;margin-top:4px;line-height:1.4}
+.chap.on{background:var(--soft)}
+.chap .pin{display:inline-block;margin-top:7px;font-size:12px;font-weight:700;color:var(--fire-t);background:#fff;border:1px solid var(--soft-b);border-radius:9px;padding:3px 8px}
+.story{background:#fff;border-radius:18px;padding:16px;border:1px solid var(--soft-b);position:relative}
+.story .who{display:flex;gap:10px;align-items:center}
+.story .who img{width:40px;height:40px;border-radius:50%;flex:none}
+.story .who b{display:block;font-size:16px}
+.story .who span{font-size:12.5px;color:var(--muted)}
+.story p{margin-top:12px;font-size:15.5px;line-height:1.5}
+.story p:first-letter{font-size:1.2em;font-weight:700;color:var(--fire-t)}
+.chk{display:flex;gap:12px;padding:12px 14px;border-top:1px solid var(--line);width:100%;text-align:left;align-items:center}
+.chk:first-child{border-top:0}
+.chk .bx{width:22px;height:22px;border-radius:7px;border:2px solid #C9C3B8;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800}
+.chk.on .bx{background:var(--ok);border-color:var(--ok)}
+.chk.on .t{color:var(--muted);text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -146,9 +188,59 @@ const WD = ['Воскресенье','Понедельник','Вторник','
 const COLORS = ['#7C8B6F','#8E7F6A','#6F8299','#9A7A86','#7D7A9E','#A0845C'];
 
 let D, S = {stack: [{v: 'today'}], done: {}, gone: {}, sent: {}, extra: [], chat: []};
+const LIVE = () => !!(D && D.live);
+
+/* Живой режим: ключ ящика в адресе после # (на сервер не уходит), копия в памяти телефона на случай, если адрес придёт без него */
+const BOX = (() => {
+  const h = new URLSearchParams(location.hash.replace(/^#/, '').replace(/#/g, '&'));
+  let b = h.get('box'), k = h.get('k');
+  try {
+    if (b && k) localStorage.setItem('ogonyok.box', JSON.stringify({b, k}));
+    else { const x = JSON.parse(localStorage.getItem('ogonyok.box') || 'null'); if (x && x.b && x.k) { b = x.b; k = x.k; } }
+  } catch (e) {}
+  return /^[0-9a-f]{32}$/.test(b || '') && k ? {b, k} : null;
+})();
+const unb64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=')), c => c.charCodeAt(0));
+const tob64 = u => btoa(Array.from(u, c => String.fromCharCode(c)).join(''));
+let boxKey;
+const key = () => boxKey || (boxKey = crypto.subtle.importKey('raw', unb64(BOX.k), 'AES-GCM', false, ['encrypt', 'decrypt']));
+async function loadBox() {
+  const r = await fetch('/api/box?id=' + BOX.b + '&part=day', {cache: 'no-store'});
+  if (r.status === 404) throw new Error('empty');
+  if (!r.ok) throw new Error('net');
+  const o = await r.json();
+  const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv: unb64(o.iv)}, await key(), unb64(o.ct)).catch(() => { throw new Error('key'); });
+  return live(JSON.parse(new TextDecoder().decode(pt)));
+}
+async function act(a) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({name: 'AES-GCM', iv}, await key(), new TextEncoder().encode(JSON.stringify(a))));
+  const r = await fetch('/api/box?id=' + BOX.b + '&part=act', {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({iv: tob64(iv), ct: tob64(ct)})});
+  if (!r.ok) throw new Error('net');
+}
+function live(d) {
+  d.brief = Object.assign({waiting: [], sections: []}, d.brief || {});
+  d.meetings = d.meetings || []; d.tasks = d.tasks || []; d.ask = d.ask || [];
+  (d.protocols || []).forEach(p => d.meetings.push(Object.assign({end: p.start, people: []}, p)));
+  d.meetings.forEach(m => { m.people = m.people || []; m.end = m.end || m.start; });
+  return d;
+}
+function md(t) {
+  const inl = x => esc(x).replace(/https?:\/\/([^\/\s]+)\S*/g, (u, h) => 'ссылка ' + h.replace(/^www\./, '')).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  let out = '', ul = false;
+  for (const l of String(t || '').split('\n')) {
+    const li = l.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)$/);
+    if (li && !ul) { out += '<ul>'; ul = true; }
+    if (!li && ul) { out += '</ul>'; ul = false; }
+    out += li ? `<li>${inl(li[1].replace(/^\[[ xX]\]\s*/, ''))}</li>` : l.trim() ? `<p>${inl(l.replace(/^#+\s*/, ''))}</p>` : '';
+  }
+  return out + (ul ? '</ul>' : '');
+}
+function botLink() { if (!D.bot) return; const u = 'https://t.me/' + D.bot; haptic(); try { tg.openTelegramLink(u); } catch (e) { location.href = u; } }
 
 function day(n) { const d = D && D.brief.date ? new Date(D.brief.date + 'T12:00:00') : new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() + n); return d; }
 function dlabel(n) {
+  if (n === null || n === undefined) return 'без срока';
   if (n === 0) return 'сегодня'; if (n === 1) return 'завтра'; if (n === -1) return 'вчера';
   const d = day(n); return d.getDate() + ' ' + MON[d.getMonth()];
 }
@@ -157,7 +249,8 @@ function initials(n) { return n.split(/\s+/).map(w => w[0]).slice(0, 2).join('')
 function color(n) { let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) % 997; return COLORS[h % COLORS.length]; }
 function haptic(k) { try { k === 'ok' ? tg.HapticFeedback.notificationOccurred('success') : tg.HapticFeedback.impactOccurred(k || 'light'); } catch (e) {} }
 function toast(t) { document.querySelectorAll('.toast').forEach(x => x.remove()); const el = document.createElement('div'); el.className = 'toast'; el.textContent = t; document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }
-function ago(t) { const d = mins(t) - mins(D.brief.now); if (d <= 0) return 'идёт сейчас'; if (d < 60) return 'через ' + d + ' мин'; const h = Math.floor(d / 60), m = d % 60; return 'через ' + h + ' ч' + (m ? ' ' + m + ' мин' : ''); }
+function nowT() { if (D.brief.now) return D.brief.now; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function ago(t) { const d = mins(t) - mins(nowT()); if (d <= 0) return 'идёт сейчас'; if (d < 60) return 'через ' + d + ' мин'; const h = Math.floor(d / 60), m = d % 60; return 'через ' + h + ' ч' + (m ? ' ' + m + ' мин' : ''); }
 
 function go(v, id) { S.stack.push({v, id}); render(); window.scrollTo(0, 0); haptic(); }
 function back() { if (S.stack.length > 1) { S.stack.pop(); render(); } }
@@ -165,7 +258,7 @@ function back() { if (S.stack.length > 1) { S.stack.pop(); render(); } }
 function render() {
   const cur = S.stack[S.stack.length - 1];
   const view = $('#view'); view.scrollTop = 0;
-  view.innerHTML = ({today, meeting, task, waiting, tasks, waitlist, ask})[cur.v](cur.id);
+  view.innerHTML = ({today, meeting, task, waiting, tasks, waitlist, ask, brief})[cur.v](cur.id);
   $('#bar').classList.toggle('hidden', cur.v !== 'today');
   if (tg) { S.stack.length > 1 ? tg.BackButton.show() : tg.BackButton.hide(); }
   view.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, b.dataset.id));
@@ -176,38 +269,44 @@ function render() {
 
 /* ---------- Сегодня ---------- */
 function today() {
-  const b = D.brief, now = mins(b.now), d0 = day(0);
+  const b = D.brief, nowS = nowT(), now = mins(nowS), d0 = day(0);
   const items = [];
-  items.push({t: b.time, cls: 'ok', title: 'Сводка готова', sub: `${b.sources[0].count} писем, ${b.sources[1].count} сообщений, ${b.skip.count} ${b.skip.label}`});
+  if (LIVE()) { if (b.title && b.time) items.push({t: b.time, cls: 'ok', title: b.title + ' готов', sub: b.sections.slice(0, 3).map(x => x.h).join(' · '), go: 'brief'}); }
+  else items.push({t: b.time, cls: 'ok', title: 'Сводка готова', sub: `${b.sources[0].count} писем, ${b.sources[1].count} сообщений, ${b.skip.count} ${b.skip.label}`});
   D.tasks.filter(t => t.mine && t.due === 0 && t.time).forEach(t => items.push({t: t.time, cls: S.done[t.id] ? 'ok gone' : 'hot', title: t.text, sub: 'Срок сегодня' + (t.from ? ' · ' + t.from : ''), go: 'task', id: t.id}));
-  D.meetings.filter(m => m.day === 0).forEach(m => items.push({t: m.start, cls: mins(m.end) < now ? 'ok' : '', title: m.title, sub: (mins(m.start) > now ? ago(m.start) : 'идёт сейчас') + ' · ' + m.people.join(', ') + (m.link ? ' · ' + m.link : ''),
-    pr: m.prep ? prepLine(m) : '', go: 'meeting', id: m.id}));
+  D.meetings.filter(m => m.day === 0).forEach(m => items.push({t: m.start, cls: mins(m.end) < now ? 'ok' : (m.hero ? 'star' : ''), title: m.title, sub: (mins(m.end) < now ? 'прошла' : mins(m.start) > now ? ago(m.start) : 'идёт сейчас') + (m.place ? ' · ' + m.place : m.people.join(', ') !== m.title ? ' · ' + m.people.join(', ') : '') + (m.link ? ' · ' + m.link : ''),
+    pr: m.event ? esc(m.event.role) + ', ' + esc(m.event.length) + '. Ролик и опорные фразы готовы.' : m.prep ? prepLine(m) : '', go: 'meeting', id: m.id}));
   b.waiting.filter(w => w.slot && !S.sent[w.id]).forEach(w => items.push({t: w.slot, cls: '', title: 'Ответить: ' + w.who, sub: w.text + ' · черновик готов', go: 'waiting', id: w.id}));
   items.sort((a, c) => mins(a.t) - mins(c.t));
-  const start = 8 * 60, end = 20 * 60, pct = x => Math.max(0, Math.min(100, (x - start) / (end - start) * 100));
+  const start = 8 * 60, end = Math.min(24 * 60, Math.max(20 * 60, ...D.meetings.filter(m => m.day === 0).map(m => Math.ceil(mins(m.end) / 60) * 60))), pct = x => Math.max(0, Math.min(100, (x - start) / (end - start) * 100));
   const noTime = D.tasks.filter(t => t.mine && t.due === 0 && !t.time).concat(S.extra.filter(t => t.due === 0));
   const mine = D.tasks.filter(t => t.mine && !S.done[t.id]).length + S.extra.length;
   const waitN = b.waiting.filter(w => !S.sent[w.id]).length;
-  const m0 = D.meetings.find(m => m.status === 'done' && m.protocol);
+  const lateN = D.tasks.filter(t => t.mine && t.due < 0 && !S.done[t.id]).length;
+  const m0 = D.meetings.find(m => m.status === 'done' && (m.protocol || m.protocol_md));
+  const hero = D.meetings.find(m => m.hero && m.day === 0 && m.event);
   return `
   <div class="dhead"><h1>Сегодня</h1><small>${WD[d0.getDay()]}, ${d0.getDate()} ${MON[d0.getMonth()]}</small></div>
   <div class="strip"><span class="done" style="width:${pct(now)}%"></span>${items.filter(i => i.go === 'meeting').map(i => `<span class="ev" style="left:${pct(mins(i.t))}%"></span>`).join('')}<span class="now" style="left:${pct(now)}%"></span></div>
-  <div class="slab"><span>8:00</span><span>сейчас ${b.now}</span><span>20:00</span></div>
+  <div class="slab"><span>8:00</span><span>сейчас ${nowS}</span><span>${end / 60}:00</span></div>
   <div class="chips">
     <button data-go="tasks">Задачи<i>${mine}</i></button>
-    <button data-go="waitlist">Ждут ответа<i>${waitN}</i></button>
-    <button data-go="ask">Спросить</button>
+    ${LIVE() && !b.waiting.length ? '' : `<button data-go="waitlist">Ждут ответа<i>${waitN}</i></button>`}
+    ${LIVE() ? (b.sections.length ? `<button data-go="brief">${esc(b.title || 'Брифинг')}</button>` : '') : `<button data-go="ask">Спросить</button>`}
   </div>
+  ${hero ? `<button class="hero" data-go="meeting" data-id="${hero.id}"><span class="k">Главное сегодня · ${hero.start}</span><b>${esc(hero.title)}</b><span class="s">${esc(hero.event.role)}, ${esc(hero.event.length)}. ${mins(hero.start) > now ? ago(hero.start)[0].toUpperCase() + ago(hero.start).slice(1) : 'Идёт сейчас'}.</span>
+    <span class="rd">${hero.event.ready.map(r => `<span>${esc(r.k)}</span>`).join('')}</span></button>` : ''}
   ${m0 ? `<button class="proto" data-go="meeting" data-id="${m0.id}"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg></span>
-    <span class="tx"><b>Протокол ${dlabel(m0.day) === 'вчера' ? 'вчерашней ' : ''}встречи готов</b><span>«${esc(m0.title)}» · ${m0.protocol.decisions.length} решения, ${m0.protocol.tasks.length} задачи</span></span>
-    <span class="chip ${S.sent[m0.id] ? 'ok' : ''}">${S.sent[m0.id] ? 'Разослан' : 'Проверить'}</span></button>` : ''}
+    <span class="tx"><b>Протокол ${dlabel(m0.day) === 'вчера' ? 'вчерашней ' : ''}встречи готов</b><span>«${esc(m0.title)}» · ${m0.protocol ? `${m0.protocol.decisions.length} решения, ${m0.protocol.tasks.length} задачи` : dlabel(m0.day) + ', ' + m0.start}</span></span>
+    <span class="chip ${S.sent[m0.id] ? 'ok' : ''}">${S.sent[m0.id] ? 'Разослан' : m0.protocol ? 'Проверить' : 'Открыть'}</span></button>` : ''}
+  ${lateN ? `<button class="proto late" data-go="tasks"><span class="ic">!</span><span class="tx"><b>Просрочено: ${lateN}</b><span>Задачи из Напоминаний со сроком в прошлом</span></span><span class="chip">Разобрать</span></button>` : ''}
   <div class="tl">${items.map(i => `
     <button class="ti ${i.cls}" ${i.go ? `data-go="${i.go}" data-id="${i.id}"` : ''}><span class="tm">${i.t.replace(/^0/, '')}</span><span class="dot"></span>
     <span class="bx"><b>${esc(i.title)}</b><span>${esc(i.sub)}</span>${i.pr ? `<div class="pr">${i.pr}</div>` : ''}</span></button>`).join('')}
   </div>
   ${noTime.length ? `<div class="sec-h"><span>Ещё на сегодня</span></div><div class="tl later">${noTime.map(t => `
     <button class="ti ${S.done[t.id] ? 'ok gone' : ''}" data-go="task" data-id="${t.id}"><span class="tm">день</span><span class="dot"></span><span class="bx"><b>${esc(t.text)}</b><span>${esc(t.list || '')}${t.from ? ' · ' + esc(t.from) : ''}</span></span></button>`).join('')}</div>` : ''}
-  <div class="note">${b.skip.count} ${b.skip.label}. Сводку Огонёк собрал в ${b.time} на вашем компьютере.</div>
+  <div class="note">${LIVE() ? `Обновлено в ${esc((D.built || '').slice(11, 16))} с вашего компьютера.${b.time ? ' ' + esc(b.title || 'Брифинг') + ' собран в ' + esc(b.time) + '.' : ''}` : `${b.skip.count} ${b.skip.label}. Сводку Огонёк собрал в ${b.time} на вашем компьютере.`}</div>
   ${S.home ? `<button class="home" id="homeBtn">＋ Добавить Огонёк на экран телефона</button>` : ''}`;
 }
 function prepLine(m) {
@@ -218,11 +317,28 @@ function prepLine(m) {
 }
 
 /* ---------- Встреча ---------- */
+function mmss(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 function meeting(id) {
   const m = D.meetings.find(x => x.id === id);
   const head = `<button class="back" data-back>‹ Назад</button>
-    <h2>${esc(m.title)}</h2><div class="meta">${dlabel(m.day)[0].toUpperCase() + dlabel(m.day).slice(1)}, ${m.start}–${m.end}${m.link ? ' · ' + esc(m.link) : ''}</div>
+    <h2>${esc(m.title)}</h2><div class="meta">${dlabel(m.day)[0].toUpperCase() + dlabel(m.day).slice(1)}, ${m.start}${m.end !== m.start ? '–' + m.end : ''}${m.link ? ' · ' + esc(m.link) : ''}${m.place ? ' · ' + esc(m.place) : ''}</div>
     <div class="ppl">${m.people.map(p => `<span>${esc(p)}</span>`).join('')}</div>`;
+  if (m.event) {
+    const e = m.event, pk = S.pack || (S.pack = Object.fromEntries(e.pack.map((x, i) => [i, x.done])));
+    const left = e.pack.filter((x, i) => !pk[i]).length;
+    return head + `
+    <div class="msgline"><small>${esc(e.role)} · ${esc(e.length)}</small>${esc(e.message)}</div>
+    <div class="ready">${e.ready.map(r => `<span>✓ ${esc(r.k)}: ${esc(r.v)}</span>`).join('')}</div>
+    <div class="sec-h"><span>Ролик за спиной</span><span>без звука</span></div>
+    <div class="vid"><video id="vid" src="${esc(e.video.src)}" poster="${esc(e.video.poster)}" playsinline controls preload="metadata" muted></video></div>
+    <div class="sec-h"><span>О чём говорить по главам</span><span>нажмите, чтобы перейти</span></div>
+    <div class="card">${e.chapters.map((c, i) => `<button class="chap" data-at="${c.at}"><span class="at">${mmss(c.at)}</span><span class="tx"><b>${esc(c.title)}</b><i>На экране: «${esc(c.screen)}»</i><span>${esc(c.say)}</span>${c.story ? `<em class="pin">Здесь история про имя Огонька</em>` : ''}</span></button>`).join('')}</div>
+    <div class="sec-h"><span>История для зала</span></div>
+    <div class="story"><div class="who"><img src="media/ogonyok.svg" alt=""><span><b>${esc(e.story.title)}</b><span>${esc(e.story.hint)}</span></span></div><p>${esc(e.story.text)}</p></div>
+    <div class="sec-h"><span>Собраться</span><span>${left ? 'осталось ' + left : 'всё готово'}</span></div>
+    <div class="card">${e.pack.map((x, i) => `<button class="chk ${pk[i] ? 'on' : ''}" data-pk="${i}"><span class="bx">${pk[i] ? '✓' : ''}</span><span class="t">${esc(x.text)}</span></button>`).join('')}</div>
+    <div class="note">Текст речи ваш. Огонёк собрал ролик, опорные фразы и список, чтобы держать всё в одном месте.</div>`;
+  }
   if (m.protocol) {
     const p = m.protocol, sent = S.sent[m.id];
     return head + `
@@ -232,7 +348,17 @@ function meeting(id) {
     ${sent ? `<div class="badge">✓ Разослано участникам</div>` : `<div class="btns"><button class="btn g" id="edit">Править</button><button class="btn" id="send">Разослать участникам</button></div>`}
     <div class="note">Протокол собран из записи на вашем компьютере. Запись и расшифровка никуда не уходят. Рассылаете вы.</div>`;
   }
-  const p = m.prep || {};
+  if (m.protocol_md) return head + m.protocol_md.map(x => `<div class="sec-h"><span>${esc(x.h)}</span></div><div class="blk md">${md(x.text)}</div>`).join('') + `
+    <div class="note">Протокол лежит в папке «Созвоны» на вашем компьютере. Запись и расшифровка никуда не уходят. Рассылаете вы.</div>`;
+  const p = m.prep;
+  if (!p && LIVE()) return head + `
+    ${m.link ? `<div class="sec-h"><span>Где</span></div><div class="blk">Созвон в ${esc(m.link)}, ссылка в приглашении</div>` : ''}
+    ${m.my_status && m.my_status !== 'accepted' ? `<div class="sec-h"><span>Ваш ответ</span></div><div class="blk">${esc({tentative: 'Под вопросом', declined: 'Отклонено', 'needs-action': 'Ещё не ответили', pending: 'Ещё не ответили'}[m.my_status] || m.my_status)}</div>` : ''}
+    <div class="note">Встреча из вашего календаря. Подготовка к ней в утреннем брифинге, после созвона здесь появится протокол.</div>`;
+  if (!p) return head + `
+    ${m.link ? `<div class="sec-h"><span>Где</span></div><div class="blk">Созвон в ${esc(m.link)}, ссылка в приглашении</div>` : ''}
+    <div class="sec-h"><span>Подготовка</span></div><div class="blk">Огонёк соберёт, о чём говорили в прошлый раз и кто что обещал, когда подключится к вашей почте и чатам.</div>
+    <div class="note">Встреча из вашего календаря. Запись созвона включится на вашем компьютере, после встречи здесь появится протокол.</div>`;
   return head + `
     <div class="sec-h"><span>В прошлый раз</span></div><div class="blk">${esc(p.last)}</div>
     ${p.promises ? `<div class="sec-h"><span>Обещания</span></div><div class="blk"><ul>${p.promises.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
@@ -243,12 +369,21 @@ function meeting(id) {
 const bind = {
   today() { const h = $('#homeBtn'); if (h) h.onclick = () => { try { tg.addToHomeScreen(); } catch (e) {} }; },
   meeting(id) {
+    const v = $('#vid');
+    if (v) {
+      const chaps = [...document.querySelectorAll('.chap')];
+      chaps.forEach(c => c.onclick = () => { v.currentTime = +c.dataset.at; v.play().catch(() => {}); v.scrollIntoView({behavior: 'smooth', block: 'center'}); haptic(); });
+      v.ontimeupdate = () => { let k = 0; chaps.forEach((c, i) => { if (v.currentTime >= +c.dataset.at) k = i; }); chaps.forEach((c, i) => c.classList.toggle('on', i === k && !v.paused)); };
+      document.querySelectorAll('[data-pk]').forEach(b => b.onclick = () => { S.pack[b.dataset.pk] = !S.pack[b.dataset.pk]; haptic(S.pack[b.dataset.pk] ? 'ok' : 'light'); const y = $('#view').scrollTop; render(); $('#view').scrollTop = y; });
+    }
     const s = $('#send'); if (s) s.onclick = () => confirmSheet('Разослать протокол?', 'Письмо получат участники: ' + D.meetings.find(x => x.id === id).people.join(', ') + '.', 'Разослать', () => { S.sent[id] = true; haptic('ok'); render(); toast('Протокол разослан участникам'); });
     const e = $('#edit'); if (e) e.onclick = () => toast('В демо протокол не правится');
   },
   task(id) {
     const t = findTask(id);
-    $('#tDone').onclick = () => { S.done[id] = !S.done[id]; haptic('ok'); back(); toast(S.done[id] ? 'Готово: ' + t.text : 'Задача снова в работе'); };
+    const d = $('#tDone');
+    if (LIVE()) { if (d) d.onclick = () => { d.disabled = true; act({do: 'done', task: id, at: Date.now()}).then(() => { S.done[id] = true; haptic('ok'); back(); toast('Отмечу в Напоминаниях на компьютере в течение 5 минут'); }).catch(() => { d.disabled = false; toast('Нет связи, попробуйте ещё раз'); }); }; return; }
+    d.onclick = () => { S.done[id] = !S.done[id]; haptic('ok'); back(); toast(S.done[id] ? 'Готово: ' + t.text : 'Задача снова в работе'); };
     $('#tMove').onclick = () => { t.due = (t.due || 0) + 1; if (t.time) delete t.time; S.extra = S.extra; haptic(); back(); toast('Перенесено на ' + dlabel(t.due)); };
   },
   waiting(id) {
@@ -265,10 +400,13 @@ function task(id) {
   return `<button class="back" data-back>‹ Назад</button>
     <h2>${esc(t.text)}</h2><div class="meta">Срок: ${dlabel(t.due)}${t.time ? ', ' + t.time : ''}${t.list ? ' · Напоминания, «' + esc(t.list) + '»' : ''}</div>
     ${t.from ? `<div class="badge" style="background:var(--soft);color:var(--fire-t)">${esc(t.from[0].toUpperCase() + t.from.slice(1))}</div>` : ''}
-    ${t.id === 't1' ? `<div class="sec-h"><span>Откуда</span></div><div class="blk">На встрече «Стенд на выставке» Ольга сказала: «Смету по стенду жду до пятницы». Бюджет не больше 1,2 млн ₽.</div>` : ''}
-    <div class="btns"><button class="btn g" id="tMove">Перенести на завтра</button><button class="btn" id="tDone">${S.done[id] ? 'Вернуть' : 'Готово'}</button></div>`;
+    ${t.late ? `<div class="badge" style="background:#FBEAE6;color:#B0432A">Просрочено на ${t.late} дн.</div>` : ''}
+    ${!LIVE() && t.id === 't1' ? `<div class="sec-h"><span>Откуда</span></div><div class="blk">На встрече «Стенд на выставке» Ольга сказала: «Смету по стенду жду до пятницы». Бюджет не больше 1,2 млн ₽.</div>` : ''}
+    ${LIVE() ? (S.done[id] ? `<div class="badge">✓ Отмечено, Напоминания обновятся в течение 5 минут</div>` : `<div class="btns"><button class="btn" id="tDone">Готово</button></div>`)
+      : `<div class="btns"><button class="btn g" id="tMove">Перенести на завтра</button><button class="btn" id="tDone">${S.done[id] ? 'Вернуть' : 'Готово'}</button></div>`}`;
 }
 function tasks() {
+  if (LIVE()) return liveTasks();
   const mine = D.tasks.filter(t => t.mine).concat(S.extra).sort((a, b) => a.due - b.due);
   const theirs = D.tasks.filter(t => !t.mine);
   const row = t => `<button class="row" data-go="task" data-id="${t.id}"><span class="tx"><b style="${S.done[t.id] ? 'text-decoration:line-through;opacity:.5' : ''}">${esc(t.text)}</b><span>${dlabel(t.due)}${t.time ? ', ' + t.time : ''}${t.from ? ' · ' + esc(t.from) : ''}</span></span>${t.due === 0 && !S.done[t.id] ? '<span class="chip">сегодня</span>' : ''}</button>`;
@@ -276,6 +414,27 @@ function tasks() {
     <div class="sec-h"><span>Мои</span><span>${mine.length}</span></div><div class="card">${mine.map(row).join('')}</div>
     <div class="sec-h"><span>Ждём от других</span><span>${theirs.length}</span></div><div class="card">${theirs.map(t => `<div class="row"><span class="av" style="background:${color(t.who)}">${initials(t.who)}</span><span class="tx"><b>${esc(t.text)}</b><span>${esc(t.who)}, ${dlabel(t.due)}</span></span><span class="chip grey">${esc(t.from === 'протокол встречи' ? 'из протокола' : t.from || '')}</span></div>`).join('')}</div>
     <div class="note">Задачи лежат в Напоминаниях на вашем компьютере, Огонёк их только показывает и отмечает.</div>`;
+}
+
+function liveTasks() {
+  const all = D.tasks.filter(t => t.mine), theirs = D.tasks.filter(t => !t.mine);
+  const row = t => `<button class="row" data-go="task" data-id="${t.id}"><span class="tx"><b style="${S.done[t.id] ? 'text-decoration:line-through;opacity:.5' : ''}">${esc(t.text)}</b><span>${t.due === null ? '' : dlabel(t.due) + (t.time ? ', ' + t.time : '') + ' · '}${esc(t.list)}${t.from && !/^из /i.test(t.list) ? ' · ' + esc(t.from) : ''}</span></span>${t.late && !S.done[t.id] ? `<span class="chip" style="background:#FBEAE6;color:#B0432A">${t.late} дн.</span>` : ''}</button>`;
+  const grp = (h, ts) => ts.length ? `<div class="sec-h"><span>${h}</span><span>${ts.length}</span></div><div class="card">${ts.map(row).join('')}</div>` : '';
+  const by = f => all.filter(f).sort((a, b) => (a.due - b.due) || (a.time || '').localeCompare(b.time || ''));
+  return `<button class="back" data-back>‹ Назад</button><h1>Задачи</h1>
+    ${grp('Просрочено', by(t => t.due !== null && t.due < 0))}${grp('Сегодня', by(t => t.due === 0))}${grp('Скоро', by(t => t.due > 0))}${grp('Без срока', all.filter(t => t.due === null))}
+    ${theirs.length ? `<div class="sec-h"><span>Ждём от других</span><span>${theirs.length}</span></div><div class="card">${theirs.map(t => `<div class="row"><span class="av" style="background:${color(t.who || t.text)}">${initials(t.who || t.text)}</span><span class="tx"><b>${esc(t.text)}</b><span>${dlabel(t.due)}</span></span></div>`).join('')}</div>` : ''}
+    ${all.length ? '' : '<div class="blk">Задач нет.</div>'}
+    <div class="note">Задачи лежат в Напоминаниях на вашем компьютере. Огонёк их показывает, а «Готово» отмечает там же.</div>`;
+}
+
+/* ---------- Брифинг ---------- */
+function brief() {
+  const b = D.brief;
+  return `<button class="back" data-back>‹ Назад</button><h1>${esc(b.title || 'Брифинг')}</h1>
+    <div class="meta">${dlabel(0)[0].toUpperCase() + dlabel(0).slice(1)}${b.time ? ', собран в ' + esc(b.time) : ''}</div>
+    ${b.sections.length ? b.sections.map(x => `<div class="sec-h"><span>${esc(x.h)}</span></div><div class="blk md">${md(x.text)}</div>`).join('') : '<div class="blk">Брифинга на сегодня ещё нет. Он появится здесь, когда Огонёк соберёт его на компьютере.</div>'}
+    <div class="note">Брифинг собран на вашем компьютере. Полная версия лежит в папке «Брифинги».</div>`;
 }
 
 /* ---------- Ждут ответа ---------- */
@@ -362,8 +521,8 @@ function confirmSheet(title, text, ok, fn) {
 }
 
 /* ---------- запуск ---------- */
-$('#askOpen').onclick = () => go('ask');
-$('#micBtn').onclick = voice;
+$('#askOpen').onclick = () => LIVE() ? botLink() : go('ask');
+$('#micBtn').onclick = () => LIVE() ? botLink() : voice();
 if (inTg) {
   document.body.classList.add('tg-in');
   tg.ready(); tg.expand();
@@ -375,8 +534,19 @@ if (inTg) {
   try { if (tg.isVersionAtLeast('8.0')) { tg.onEvent('homeScreenChecked', e => { S.home = e.status === 'missed'; if (D) render(); }); tg.onEvent('homeScreenAdded', () => { S.home = false; if (D) render(); toast('Огонёк на экране телефона'); }); tg.checkHomeScreenStatus(); } } catch (e) {}
   tg.BackButton.onClick(back);
 }
-fetch('demo.json', {cache: 'no-store'}).then(r => r.json()).then(d => { D = d; render(); })
-  .catch(() => { $('#view').innerHTML = '<h2>Не удалось загрузить данные</h2><div class="meta">Проверьте интернет и откройте ещё раз.</div>'; });
+const FAIL = {empty: ['День ещё не пришёл с компьютера', 'Компьютер с Огоньком должен быть включён: он присылает день раз в 5 минут.'],
+  key: ['Ключ не подходит', 'Откройте Огонёк кнопкой в чате с вашим ботом: в ней правильный ключ.'],
+  net: ['Не удалось загрузить данные', 'Проверьте интернет и откройте ещё раз.']};
+function started() {
+  if (LIVE()) {
+    $('#askOpen').textContent = D.bot ? 'Спросить Огонька в чате' : '';
+    $('#bar').style.display = D.bot ? '' : 'none';
+    setInterval(() => { if (document.visibilityState === 'visible') loadBox().then(d => { D = d; if (S.stack.length === 1) render(); }).catch(() => {}); }, 120000);
+  }
+  render();
+}
+(BOX ? loadBox() : fetch('demo.json', {cache: 'no-store'}).then(r => r.json()).then(d => d.live ? live(d) : d)).then(d => { D = d; started(); })
+  .catch(e => { const [h, t] = FAIL[e.message] || FAIL.net; $('#view').innerHTML = `<h2>${h}</h2><div class="meta">${t}</div>`; $('#bar').style.display = 'none'; });
 </script>
 </body>
 </html>

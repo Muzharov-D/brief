@@ -15,6 +15,7 @@
   brief update                          обновить ядро и агентов, свои настройки не трогает
   brief access                          Mac: вызвать запросы macOS на доступ для работы в фоне (нажать «Разрешить»)
   brief alert [текст]                   показать уведомление на компьютере (так Огонёк сообщает, если Telegram недоступен)
+  brief app setup|sync|install|status   мини-приложение в вашем боте: день с этого компьютера в зашифрованном виде
 Где что лежит:
   ядро и стандартные агенты: эта папка (git), обновляется командой brief update
   настройки, ключи, журнал аудита: ~/.brief (BRIEF_HOME), наружу не уходят
@@ -1487,7 +1488,13 @@ def access_rows(p):
     return rows
 
 
-COMMANDS = {"setup": cmd_setup, "run": cmd_run, "agent": cmd_agent, "agents": cmd_agents, "connectors": cmd_connectors,
+def cmd_app(args):
+    sys.path.insert(0, str(CORE))
+    import box  # noqa: E402
+    box.main(args)
+
+
+COMMANDS = {"app": cmd_app, "setup": cmd_setup, "run": cmd_run, "agent": cmd_agent, "agents": cmd_agents, "connectors": cmd_connectors,
             "profile": cmd_profile, "audit": cmd_audit, "doctor": cmd_doctor, "schedule": cmd_schedule, "tick": cmd_tick,
             "update": cmd_update, "access": cmd_access, "alert": cmd_alert}
 

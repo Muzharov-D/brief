@@ -58,7 +58,7 @@ if [ ! -x "$UV" ]; then
 fi
 PY="$HOMEB/venv/bin/python"
 [ -x "$PY" ] || "$UV" venv -q --python 3.12 "$HOMEB/venv" || fail "не создалось окружение Python"
-"$UV" pip install -q --python "$PY" telethon qrcode faster-whisper || fail "не поставились библиотеки"
+"$UV" pip install -q --python "$PY" telethon qrcode faster-whisper cryptography || fail "не поставились библиотеки"
 
 step "3/4 Модель распознавания речи (около 0,5 ГБ, работает без интернета)"
 "$PY" -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8')" 2>/dev/null \

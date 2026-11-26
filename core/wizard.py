@@ -212,6 +212,13 @@ def api(name, body):
             return sh(["run", "tg", "access-save", *body.get("folders", [])], 30)
         if action in ("gui-login", "bot-setup"):
             return start_job("tg-" + action, ["run", "tg", action], 900)
+    if name == "miniapp":  # кнопка «Огонёк» в боте (мини-приложение с днём) и снимок дня раз в 5 минут
+        if brief.PLATFORM != "mac":
+            return {"skipped": True}
+        r = sh(["app", "setup"], 300)
+        if r.get("button"):
+            r["install"] = sh(["app", "install"], 60)
+        return r
     if name == "bitrix_setup":
         return start_job("bitrix", ["run", "tasks", "setup"], 600)
     if name == "job":

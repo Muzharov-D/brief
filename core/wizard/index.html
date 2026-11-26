@@ -473,10 +473,18 @@ async function stTelegram() {
   const st = S.telegram = await call("tg", {action: "status"});
   if (st.bot) {
     say(nb(`Бот ${st.bot_name ? "@" + st.bot_name : ""} подключён: брифинги будут приходить в него.`));
+    miniapp();
     input(button("Дальше", "", () => next(`Бот ${st.bot_name ? "@" + st.bot_name : "подключён"}`)), button("Подключить другого бота", "ghost", () => botStep()));
     return;
   }
   botStep();
+}
+// Мини-приложение: кнопка «Огонёк» в чате с ботом, день с этого компьютера в зашифрованном виде
+async function miniapp() {
+  if (S.miniapp) return; S.miniapp = true;
+  const m = await call("miniapp").catch(() => ({}));
+  if (m.button) say(nb("В чате с ботом слева от поля ввода появилась кнопка «Огонёк»: там ваш день, встречи, задачи и брифинг. День приходит с этого компьютера в зашифрованном виде и обновляется раз в 5 минут."));
+  else if (!m.skipped) S.miniapp = false;
 }
 function botStep() {
   say(nb("Нужен ваш личный бот, это 2 минуты. В Telegram откройте @BotFather, отправьте /newbot, задайте название и адрес на …bot и скопируйте токен из ответа. Потом нажмите «Подключить бота» и вставьте токен в окно. Бот откроется в Telegram: нажмите в нём «Start»."));
@@ -487,6 +495,7 @@ function botStep() {
     if (r.error) { say(`<span class="bad">${nb(r.error)}</span>`); return; }
     if (!r.ok) { say(`<span class="bad">${nb(r.text || "Бот не подключился. Попробуйте ещё раз.")}</span>`); return; }
     S.telegram = await call("tg", {action: "status"});
+    await miniapp();
     next(`Бот @${r.bot || ""}`);
   }), button("Без Telegram", "ghost", async () => { await setConn("telegram", false); next("Без Telegram"); }));
 }
